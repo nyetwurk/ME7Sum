@@ -37,6 +37,18 @@ struct ImageHandle {
 	size_t	len;
 };
 
+/*
+ * If htole16() is missing, let's assume that other *le*() functions
+ * are also missing.
+ *
+ * OpenBSD - htole16 & 32 exist, but not le16toh etc
+ */
+#if defined(__OpenBSD__)
+#define le16toh(x) htole16(x)
+#define le32toh(x) htole32(x)
+#endif
+
+#if !defined(htole16)
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define le32toh(x) (x)
 #define le16toh(x) (x)
@@ -47,6 +59,7 @@ struct ImageHandle {
 #define htole16(x) __bswap_16(x)
 #define le32toh(x) __bswap_32(x)
 #define htole16(x) __bswap_16(x)
+#endif
 #endif
 
 // they're the same.
