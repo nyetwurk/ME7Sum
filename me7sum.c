@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 	char *inifile=NULL;
 	char *input=NULL;
 	char *output=NULL;
-	char c;
+	int c;
 	struct ImageHandle ih;
 	struct section *osconfig=NULL;
 
