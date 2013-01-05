@@ -24,8 +24,6 @@ BUILDING:
 
 Under unix or cygwin, "make" should work.
 
-If not using GNUmake, try "make -f GNUmakefile"
-
 Under Windows MSVSS/nmake , type "prep.cmd" then "nmake"
 
 RUNNING:
