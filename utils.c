@@ -122,7 +122,7 @@ static int memcmp_mask(const void *ptr1, const void *ptr2, const void *mask, siz
 }
 
 /* returns -1 on failure, start if found, start+align if not found */
-int search_image(const struct ImageHandle *ih, int start, const void *needle, const void *mask, int len, int align)
+int search_image(const struct ImageHandle *ih, size_t start, const void *needle, const void *mask, int len, int align)
 {
     if (start<0) return -1;
 

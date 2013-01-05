@@ -358,7 +358,7 @@ out:
  * - uses config file to parse rom data and show interesting information about this rom dump
  */
 
-static int GetRomInfo(const struct ImageHandle *ih, struct section *osconfig,	uint32_t num_of)
+static int GetRomInfo(const struct ImageHandle *ih, struct section *osconfig, uint32_t num_of)
 {
 	char str_data[1025];	// Leave room for null termination
 	char type_str[256];
@@ -373,7 +373,7 @@ static int GetRomInfo(const struct ImageHandle *ih, struct section *osconfig,	ui
 	const char * ptr_label;
 	uint32_t ptr_offset;
 	uint32_t ptr_length;
-	int i;
+	uint32_t i;
 
 	if(ih == 0) return(-1);
 	//
@@ -432,12 +432,12 @@ static int GetRomInfo(const struct ImageHandle *ih, struct section *osconfig,	ui
 static int FindMainCRCData(const struct ImageHandle *ih, const char *what,
 	const uint8_t *n, const uint8_t *m, int len,	// needle, mask, len of needle/mask
 	int off_l, int off_h,							// where to find hi/lo (short word offset into find array)
-	uint32_t *offset, int offset_len,				// array to store discovered offsets, len of array
+	uint32_t *offset, size_t offset_len,				// array to store discovered offsets, len of array
 	uint32_t *where)								// address of match (ONLY if single match), NULL if not needed
 {
 	/* Note that off_l and off_h are SHORT WORD offsets, i.e. 1 == 2 bytes */
 
-	int i, found=0;
+	size_t i, found=0;
 	uint32_t last_where=0;
 
 	for(i=0;i+len<ih->len;i+=2)
@@ -474,7 +474,7 @@ static int FindMainCRCData(const struct ImageHandle *ih, const char *what,
 static int FindMainCRCPreBlk(const struct ImageHandle *ih)
 {
 	int found;
-	uint32_t offset;
+	uint32_t offset=0;
 	uint32_t where=0;
 	//                                LL    LL                HH    HH          s
 	uint8_t needle[] = {0xE6, 0xFC, 0x00, 0x00, 0xE6, 0xFD, 0x00, 0x00, 0xE0, 0x0E, 0xDA, 0x00, 0x00, 0x00, 0xF6, 0xF4};
