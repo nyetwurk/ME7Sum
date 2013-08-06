@@ -1,18 +1,21 @@
 RM	= rm -f
-CC	= gcc
 AR	= ar rcs
 ECHO	= @echo
 CFLAGS	= -Wall -O3 -Werror -MD $(CDEFS)
 
 CDEFS	+= -D__GIT_VERSION=\"$(GIT_VERSION)\"
 
-UNAME       = $(shell uname -s)
 GIT_VERSION = $(shell sh -c 'git describe --tags --abbrev=4 --dirty --always')
+SYS	:= $(shell gcc -dumpmachine)
 
-ifeq ($(findstring CYGWIN,$(UNAME)),CYGWIN)
+ifneq (, $(findstring mingw, $(SYS)))
 EXE_EXT = .exe
-CC	= i686-pc-mingw32-gcc
-#CDEFS	+= -D_GNU_SOURCE=1
+CC	= i686-pc-mingw32-gcc 
+else ifneq (, $(findstring cygwin, $(SYS)))
+EXE_EXT = .exe
+CC	= i686-pc-cygwin-gcc 
+else
+CC	= gcc
 endif
 
 SRC     = $(notdir $(foreach dir, ., $(wildcard $(dir)/*.c)))
