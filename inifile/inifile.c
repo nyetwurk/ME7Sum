@@ -275,29 +275,34 @@ int dump_section_properties(struct section *sections, const char *sectname)
 void list_properties(int f, struct section *sect)
 {
 	struct property *prop;
+	int dummy;
 
 	while (sect)
 	{
-		write(f, "[", 1);
-		write(f, sect->name, strlen(sect->name));
-		write(f, "]\r\n", 3);
+		dummy = write(f, "[", 1);
+		dummy = write(f, sect->name, strlen(sect->name));
+		dummy = write(f, "]\r\n", 3);
 
 		prop = sect->properties;
 		while (prop)
 		{
-			write(f, prop->name, strlen(prop->name));
+			dummy = write(f, prop->name, strlen(prop->name));
 			if (prop->value)
 			{
-				write(f, "=", 1);
-				write(f, prop->value, strlen(prop->value));
+				dummy = write(f, "=", 1);
+				dummy = write(f, prop->value, strlen(prop->value));
 			}
-			write(f, "\r\n", 2);
+			dummy = write(f, "\r\n", 2);
 			prop = prop->next;
 		}
 
-		if (sect->next) write(f, "\r\n", 2);
+		if (sect->next)
+		{
+			dummy = write(f, "\r\n", 2);
+		}
 		sect = sect->next;
 	}
+	(void) dummy;
 }
 
 #include <sys/types.h>

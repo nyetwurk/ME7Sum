@@ -1,6 +1,6 @@
 # makefile
 include ../vars.mk
 
-LIB     =libini.a
+LIB     = libini.a
 
 include ../makefile.common
