@@ -1,0 +1,32 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: TheMrMilchmann/setup-msvc-dev@v3
+      with:
+        arch: x86
+    - name: build
+      run: nmake
+    - uses: rlespinasse/github-slug-action@v4
+      if: ${{ github.event_name != 'release' }}
+      with:
+        short-length: 6
+    - uses: actions/upload-artifact@v4
+      if: ${{ github.event_name != 'release' }}
+      with:
+        name: me7sum-${{ env.GITHUB_SHA_SHORT }}-win
+        path: |
+          me7sum.exe
+          ME7Check.exe
+          README.md

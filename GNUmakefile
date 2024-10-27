@@ -11,6 +11,10 @@ endif
 
 include makefile.common
 
+.PHONY: test
+test:
+	./test.sh
+
 win: force
 	./build.cmd clean
 	./build.cmd

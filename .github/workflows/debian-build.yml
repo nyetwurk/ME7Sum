@@ -1,0 +1,35 @@
+name: Debian Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: install libgmp-dev
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgmp-dev
+    - uses: actions/checkout@v4
+    - name: make
+      run: make
+    - name: make test
+      run: make test
+    - uses: rlespinasse/github-slug-action@v4
+      if: ${{ github.event_name != 'release' }}
+      with:
+        short-length: 6
+    - uses: actions/upload-artifact@v4
+      if: ${{ github.event_name != 'release' }}
+      with:
+        name: me7sum-${{ env.GITHUB_SHA_SHORT }}-debian
+        path: |
+          me7sum
+          ME7Check_linux
+          README.md
