@@ -1,0 +1,46 @@
+name: Unix Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  release:
+    types: [ published ]
+
+env:
+  artifacts: |
+    me7sum
+    ME7Check_linux
+    README.md
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ 'ubuntu', 'macos']
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: make
+      run: make
+    - name: make test
+      run: make test
+    - uses: rlespinasse/github-slug-action@v4
+      if: ${{ github.event_name != 'release' }}
+      with:
+        short-length: 6
+    - uses: actions/upload-artifact@v4
+      if: ${{ github.event_name != 'release' }}
+      with:
+        name: me7sum-${{ env.GITHUB_SHA_SHORT }}-${{ matrix.os }}
+        path: ${{ env.artifacts }}
+    - name: Upload ${{ matrix.os }} artifact to release
+      if: github.event_name == 'release' && github.event.action == 'published'
+      run: |
+        ARTIFACTS="${artifacts//$'\n'/ }"
+        echo "Zipping ${ARTIFACTS}"
+        zip -qr me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip ${ARTIFACTS}
+        gh release upload --clobber ${{ github.ref_name }} me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -5,12 +5,18 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  release:
+    types: [ published ]
+
+env:
+  artifacts: >
+    me7sum.exe
+    ME7Check.exe
+    README.md
 
 jobs:
   build:
-
     runs-on: windows-latest
-
     steps:
     - uses: actions/checkout@v4
     - uses: TheMrMilchmann/setup-msvc-dev@v3
@@ -26,7 +32,11 @@ jobs:
       if: ${{ github.event_name != 'release' }}
       with:
         name: me7sum-${{ env.GITHUB_SHA_SHORT }}-win
-        path: |
-          me7sum.exe
-          ME7Check.exe
-          README.md
+        path: ${{ env.artifacts }}
+    - name: Upload windows artifact to release
+      if: github.event_name == 'release' && github.event.action == 'published'
+      run: |
+        7z a -tzip me7sum-${{ github.ref_name }}-win.zip ${{ env.artifacts }}
+        gh release upload --clobber ${{ github.ref_name }} me7sum-${{ github.ref_name }}-win.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
