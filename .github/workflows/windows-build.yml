@@ -9,7 +9,7 @@ on:
     types: [ published ]
 
 env:
-  artifacts: >
+  artifacts: |
     me7sum.exe
     ME7Check.exe
     README.md
@@ -36,7 +36,8 @@ jobs:
     - name: Upload windows artifact to release
       if: github.event_name == 'release' && github.event.action == 'published'
       run: |
-        7z a -tzip me7sum-${{ github.ref_name }}-win.zip ${{ env.artifacts }}
+        $env:artifacts > artifacts.txt
+        cmd --% /c 7z a -tzip me7sum-${{ github.ref_name }}-win.zip @artifacts.txt
         gh release upload --clobber ${{ github.ref_name }} me7sum-${{ github.ref_name }}-win.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
