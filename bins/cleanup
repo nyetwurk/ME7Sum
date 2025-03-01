@@ -2,10 +2,11 @@
 for i in $*; do
     box=$( ../me7sum -s $i | grep "Part Number" | sed -e 's/ //g' | cut -f 2 -d \')
     ver=$( ../me7sum -s $i | grep "SW Version" | sed -e 's/ //g' | cut -f 2 -d \')
-    ssecu=$( ../me7sum -s $i | grep "SW Number" | sed -e 's/^1037//' | sed -e 's/ //g' )
+    hw=$( ../me7sum -s $i | grep "HW Number" | sed -e 's/ //g' | cut -f 2 -d \' )
+    ssecu=$( ../me7sum -s $i | grep "SW Number" | sed -e 's/ //g' | cut -f 2 -d \' | sed -e 's/^1037/1037-/')
 
-    if [ -z "$box" -o -z "$ver" -o -z "$ssecu" ]; then
-	echo $i box=\"$box\" ver=\"$ver\" ssecu=\"$ssecu\" failed >&2
+    if [ -z "$box" -o -z "$ver" -o -z "$hw" -o -z "$ssecu" ]; then
+	echo $i box=\"$box\" ver=\"$ver\" hw=\"$hw\"ssecu=\"$ssecu\" failed >&2
 	continue
     fi
 
@@ -14,6 +15,7 @@ for i in $*; do
     out=$box.bin
 
     if [ "$i" = "$out" -o "$i" = "$outl" ]; then
+	echo -n "$box $hw-$ssecu $ver: "
 	echo $i \($outl\) ok >&2
     else
 	if [ ! -f "$out" ]; then
