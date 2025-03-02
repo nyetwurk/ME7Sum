@@ -15,7 +15,7 @@ for i in $*; do
     out=$box.bin
 
     if [ "$i" = "$out" -o "$i" = "$outl" ]; then
-	echo -n "$box $hw-$ssecu $ver: "
+	echo -n "$box $hw-$ssecu $ver: " >&2
 	echo $i \($outl\) ok >&2
     else
 	if [ ! -f "$out" ]; then

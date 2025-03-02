@@ -7,4 +7,4 @@
 me7sum
 me7sum.exe
 .compiler_flags
-/bins/*.bin.txt
+*.bin.txt
