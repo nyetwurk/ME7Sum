@@ -27,13 +27,14 @@ jobs:
     - name: make test
       run: make test
     - uses: rlespinasse/github-slug-action@v4
+      id: slug
       if: ${{ github.event_name != 'release' }}
       with:
         short-length: 6
     - uses: actions/upload-artifact@v4
       if: ${{ github.event_name != 'release' }}
       with:
-        name: me7sum-${{ env.GITHUB_SHA_SHORT }}-${{ matrix.os }}
+        name: me7sum-${{ steps.slug.outputs.GITHUB_SHA_SHORT }}-${{ matrix.os }}
         path: ${{ env.artifacts }}
     - name: Upload ${{ matrix.os }} artifact to release
       if: github.event_name == 'release' && github.event.action == 'published'
