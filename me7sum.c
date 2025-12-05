@@ -1734,8 +1734,8 @@ static int DoROMSYS_Startup(struct ImageHandle *ih, const struct ROMSYSDescripto
 		}
 		else
 		{
-			uint16_t *p16 = (uint16_t *)(ih->d.u8 + off);
-			*p16=le16toh(nCalcStartupSum);
+			uint32_t *p32 = (uint32_t *)(ih->d.u8 + off);
+			*p32=le32toh(nCalcStartupSum);
 			ErrorsCorrected++;
 			printf(" ** FIXED **\n");
 		}
