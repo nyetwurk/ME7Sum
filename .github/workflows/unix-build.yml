@@ -21,7 +21,7 @@ jobs:
         os: [ 'ubuntu', 'macos']
     runs-on: ${{ matrix.os }}-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: make
       run: make
     - name: make test
