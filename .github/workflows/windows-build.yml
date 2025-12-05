@@ -24,7 +24,7 @@ jobs:
         arch: x86
     - name: build
       run: nmake
-    - uses: rlespinasse/github-slug-action@v4
+    - uses: rlespinasse/github-slug-action@v5
       id: slug
       if: ${{ github.event_name != 'release' }}
       with:

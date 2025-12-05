@@ -26,7 +26,7 @@ jobs:
       run: make
     - name: make test
       run: make test
-    - uses: rlespinasse/github-slug-action@v4
+    - uses: rlespinasse/github-slug-action@v5
       id: slug
       if: ${{ github.event_name != 'release' }}
       with:
