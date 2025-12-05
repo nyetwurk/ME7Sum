@@ -19,7 +19,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v6
-    - uses: TheMrMilchmann/setup-msvc-dev@v3
+    - uses: TheMrMilchmann/setup-msvc-dev@v4
       with:
         arch: x86
     - name: build
