@@ -47,14 +47,13 @@ It should generally autodetect checksum/CRC blocks, but is known not to work on 
 ferrari360.bin
 
 # Building
-Under unix or cygwin, "make" should work. On debian you will need `libgmp-dev`
 
-Under Windows MSVSS/nmake, type "build clean" then "build"
+See [BUILD.md](BUILD.md) for full build instructions and dependencies (Linux, Windows, Cygwin, macOS).
 
-Under MacOS, type "brew install gmp" then "make"
+Quick start: under Unix or Cygwin, `make` should work (Debian: `libgmp-dev`; Cygwin: `libgmp-devel`). Under Windows MSVC/nmake, run `build clean` then `build`. Under macOS, `brew install gmp` then `make`.
 
 # Contributing
-Feel free to contribute to the project!
+Feel free to contribute to the project! See [RELEASE.md](RELEASE.md) for the release process and GitHub workflow behavior.
 
 nyet's ME7Sum:
 http://nefariousmotorsports.com/forum/index.php?topic=3347.0title=
