@@ -992,7 +992,7 @@ static uint32_t CalcChecksumBlk8(const struct ImageHandle *ih, const struct Rang
 
 	for(nIndex = r->start; nIndex <= r->end; nIndex++)
 	{
-		nChecksum+=le16toh(ih->d.u8[nIndex]);
+		nChecksum+=ih->d.u8[nIndex]; // 8 bit source, 32 bit accumulator
 	}
 
 	return nChecksum;
