@@ -58,20 +58,20 @@ static void generate_primes(private_key *ku)
     mpz_mod(tmp, ku->p, ku->e);
     while(!mpz_cmp_ui(tmp, 1))
     {
-	/* Nope. Choose the next prime */
+        /* Nope. Choose the next prime */
         mpz_nextprime(ku->p, ku->p);
         mpz_mod(tmp, ku->p, ku->e);
     }
 
     /* Now select q, where q!=p */
     do {
-	generate_random_p(ku->q);
-	/* Make sure this is a good choice*/
-	/* If p mod e == 1, gcd(phi, e) != 1 */
+        generate_random_p(ku->q);
+        /* Make sure this is a good choice*/
+        /* If p mod e == 1, gcd(phi, e) != 1 */
         mpz_mod(tmp, ku->q, ku->e);
-	while(!mpz_cmp_ui(tmp, 1))
+        while(!mpz_cmp_ui(tmp, 1))
         {
-	    /* Nope. Choose the next prime */
+            /* Nope. Choose the next prime */
             mpz_nextprime(ku->q, ku->q);
             mpz_mod(tmp, ku->q, ku->e);
         }
@@ -112,12 +112,12 @@ int generate_keys(private_key* ku, public_key* kp)
     /* Calculate d (multiplicative inverse of e mod phi) */
     if(mpz_invert(ku->d, ku->e, phi) == 0)
     {
-	mpz_gcd(tmp1, ku->e, phi);
-	printf("gcd(e, phi) = [%s]\n", mpz_get_str(NULL, 16, tmp1));
-	printf("Invert failed\n");
-	mpz_clear(tmp1);
-	mpz_clear(phi);
-	return -1;
+        mpz_gcd(tmp1, ku->e, phi);
+        printf("gcd(e, phi) = [%s]\n", mpz_get_str(NULL, 16, tmp1));
+        printf("Invert failed\n");
+        mpz_clear(tmp1);
+        mpz_clear(phi);
+        return -1;
     }
 
     mpz_clear(tmp1);
@@ -160,7 +160,7 @@ int rsa_encrypt(char *cipher, const char *message, int length, public_key kp)
     {
         int i = 0;
         int d_len = (prog >= (BLOCK_SIZE - 11)) ? BLOCK_SIZE - 11 : prog;
-	int off;
+        int off;
 
         /* Construct the header */
         mess_block[i++] = 0x00;
@@ -216,7 +216,7 @@ int rsa_decrypt(char* message, const char* cipher, int length, private_key ku)
 
     for(i = 0; i < (length / BLOCK_SIZE); i++)
     {
-	int off;
+        int off;
         int j;
 
         // Pull block into mpz_t
@@ -314,3 +314,4 @@ int main()
     return 0;
 }
 #endif
+/* vim: set sw=4 ts=8 expandtab: */

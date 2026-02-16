@@ -8,32 +8,32 @@
 #include "list.h"
 
 struct Range {
-	uint32_t start;
-	uint32_t end;
+    uint32_t start;
+    uint32_t end;
 };
 
 struct RangeList {
-	struct list_head list;	/* MSVC doesn't have typeof, so list must always be first */
+    struct list_head list;  /* MSVC doesn't have typeof, so list must always be first */
 
-	struct Range r;
+    struct Range r;
 };
 
 struct ReportRecord {
-	int index;
-	char *name;		/* name of this region */
-	struct RangeList data;	/* data ranges that it spans */
-	struct Range checksum;	/* range of checksum data */
-	struct strbuf msg;	/* dependency messages */
-	int dep_errs;		/* number of other checksums found later that are in my data */
+    int index;
+    char *name;             /* name of this region */
+    struct RangeList data;  /* data ranges that it spans */
+    struct Range checksum;  /* range of checksum data */
+    struct strbuf msg;      /* dependency messages */
+    int dep_errs;           /* number of other checksums found later that are in my data */
 
-	int (*callback)(void *, struct ReportRecord *);
-	void *cb_data;	/* pointer passed to callback */
+    int (*callback)(void *, struct ReportRecord *);
+    void *cb_data;  /* pointer passed to callback */
 };
 
 struct ReportRecordList {
-	struct list_head list; /* MSVC doesn't have typeof, so list must always
+    struct list_head list; /* MSVC doesn't have typeof, so list must always
  be first */
-	struct ReportRecord rr;
+    struct ReportRecord rr;
 };
 
 extern struct ReportRecord *CreateRecord(const char *name, uint32_t start, int len);
@@ -46,3 +46,4 @@ extern void FreeAllRecords(void);
 extern int ProcessRecordDeps(void);
 
 #endif /* ! RANGE_H */
+/* vim: set sw=4 ts=8 expandtab: */

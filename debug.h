@@ -72,3 +72,4 @@
 #define DEBUG_FLUSH_MULTIPOINT DEBUG_FLUSH_NO
 #define DEBUG_EXIT_MULTIPOINT
 #endif
+/* vim: set sw=4 ts=8 expandtab: */

@@ -45,17 +45,17 @@ enum Padding {
 };
 
 struct ImageHandle {
-	union {
-//		uint32_t	*u32;
-		uint16_t	*u16;
-		uint8_t		*u8;
-		char		*s;
-		void		*p;
-	} d;
-	size_t	len;
-	enum	Padding pad;
-	int	bootrom_whitelist;
-	char	filename[PATH_MAX];
+    union {
+//              uint32_t        *u32;
+        uint16_t        *u16;
+        uint8_t         *u8;
+        char            *s;
+        void            *p;
+    } d;
+    size_t  len;
+    enum    Padding pad;
+    int     bootrom_whitelist;
+    char    filename[PATH_MAX];
 };
 
 /*
@@ -88,12 +88,12 @@ struct ImageHandle {
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define memcpy_from_le32(dest, src, len) \
-	memcpy(dest, src, len)
+    memcpy(dest, src, len)
 #else
 #define memcpy_from_le32(dest, src, len) { \
-	int i; \
-	for (i=0;i<len/4;i++) \
-		((uint32_t *)dest)[i] = __bswap_32(((uint32_t *)src)[i]); \
+    int i; \
+    for (i=0;i<len/4;i++) \
+        ((uint32_t *)dest)[i] = __bswap_32(((uint32_t *)src)[i]); \
 }
 #endif
 
@@ -107,3 +107,4 @@ int search_image(const struct ImageHandle *ih, size_t start, const void *needle,
 void hexdump(const uint8_t *buf, int len, const char *end);
 
 #endif
+/* vim: set sw=4 ts=8 expandtab: */

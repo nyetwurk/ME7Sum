@@ -25,11 +25,11 @@
 int chomp_crlf(char *str, int len)
 {
     if (len) {
-	while (str[len-1] == '\n' || str[len-1] == '\r') {
-	    str[--len] = '\0';
-	    if (!len)
-	    break;
-	}
+        while (str[len-1] == '\n' || str[len-1] == '\r') {
+            str[--len] = '\0';
+            if (!len)
+            break;
+        }
     }
     return len;
 }
@@ -40,7 +40,7 @@ int chomp(char *str)
 {
     int len=strlen(str);
     while ((len > 0) && isspace((unsigned char)str[len-1]))
-	str[--len] = '\0';
+        str[--len] = '\0';
     return len;
 }
 
@@ -48,7 +48,7 @@ int chompn(char *str, int len)
 {
     len=strnlen(str,len);
     while ((len > 0) && isspace((unsigned char)str[len-1]))
-	str[--len] = '\0';
+        str[--len] = '\0';
     return len;
 }
 
@@ -62,8 +62,8 @@ char *sbchomp(struct strbuf *buf)
 #endif
 
 /** Converts ascii MAC address with any delimiters hex values without delimiters.
-        return  0 = success
-                1 = error
+    return  0 = success
+        1 = error
  */
 int atomac(unsigned char * mac, char * buf)
 {
@@ -96,20 +96,20 @@ void sbensure(struct strbuf *sb, int n)
     ASSERT(sb != NULL);
     len = sb->len;
     if ((sb->pbuf != NULL) && ((len - sb->offset) >= n))
-	return;
+        return;
 
     /* Grow buffer exponentially, rather than per addendum */
     if (len == 0) len = 100;
     while ((len - sb->offset) < n)
-	len *= 2;
+        len *= 2;
 
     buf = realloc(sb->pbuf, len);
     // ASSERT_INFO((buf != NULL), "%zu", len);
 #ifdef _MALLOC_H
     {
-	size_t usable = malloc_usable_size(buf);
-	/* Take advantage of full usable allocation */
-	sb->len = (usable > len) ? usable : len;
+        size_t usable = malloc_usable_size(buf);
+        /* Take advantage of full usable allocation */
+        sb->len = (usable > len) ? usable : len;
     }
 #else
     sb->len = len;
@@ -128,37 +128,37 @@ int vsbprintf(struct strbuf *param, const char *fmt, va_list ap)
     buf = param->pbuf;
 
     if(!buf) {
-	if (param->len == 0)
-	    param->len = 100;
-	buf = malloc(param->len);
-	// ASSERT_INFO((buf != NULL), "%zu", param->len);
+        if (param->len == 0)
+                param->len = 100;
+        buf = malloc(param->len);
+        // ASSERT_INFO((buf != NULL), "%zu", param->len);
 #ifdef _MALLOC_H
-	{
-	    /* Take advantage of full usable allocation */
-	    size_t usable = malloc_usable_size(buf);
-	    if (param->len < usable)
-		param->len = usable;
-	}
+        {
+            /* Take advantage of full usable allocation */
+            size_t usable = malloc_usable_size(buf);
+            if (param->len < usable)
+                param->len = usable;
+        }
 #endif
     }
 
     while(1) {
         int rem = param->len - param->offset;
-	va_list cp;
-	va_copy(cp, ap);
+        va_list cp;
+        va_copy(cp, ap);
         ret = vsnprintf(buf + param->offset, rem, fmt, cp);
-	va_end(cp);
+        va_end(cp);
         if(ret == -1) buf = realloc(buf, param->len *= 2);
         else if(ret >= rem) buf = realloc(buf, param->len += ret);
         else break;
-	//ASSERT_INFO((buf != NULL), "%zu", param->len);
+        //ASSERT_INFO((buf != NULL), "%zu", param->len);
 #ifdef _MALLOC_H
-	{
-	    /* Take advantage of full usable allocation */
-	    size_t usable = malloc_usable_size(buf);
-	    if (param->len < usable)
-		param->len = usable;
-	}
+        {
+            /* Take advantage of full usable allocation */
+            size_t usable = malloc_usable_size(buf);
+            if (param->len < usable)
+                param->len = usable;
+        }
 #endif
     }
     param->offset += ret;
@@ -190,8 +190,8 @@ char *sbfill(struct strbuf *sb, char fill, int width)
     char buf[]={fill,'\0'};
     int off=sb->offset;
     if(width) {
-	sbprintf(sb, "%*s", width, buf);
-	memset(sb->pbuf+off, fill, width);
+        sbprintf(sb, "%*s", width, buf);
+        memset(sb->pbuf+off, fill, width);
     }
     return sb->pbuf;
 }
@@ -202,8 +202,8 @@ static int str_is_xdigit(char *str, int len)
     int i;
 
     for(i = 0; i < len; i++) {
-	if (!isxdigit((unsigned char)str[i]))
-	    return 0;
+        if (!isxdigit((unsigned char)str[i]))
+            return 0;
     }
     return 1;
 }
@@ -219,10 +219,10 @@ int atohex(unsigned char * data, char * buf, int *digits)
 
     len = strlen(buf);
     if ((len-2) % 3)
-        return 1;
+    return 1;
 
     for (i=0,j=0; i<len; i+=3,j++) {
-	if(!str_is_xdigit(buf+i,2)) return 1;
+        if(!str_is_xdigit(buf+i,2)) return 1;
         data[j] = (unsigned char)strtol(buf+i, NULL, 16);
     }
     *digits = j;
@@ -240,12 +240,12 @@ int atohex_no_delim(unsigned char * data, char * buf, int *digits)
 
     len = strlen(buf);
     if (len % 2)
-        return 1;
+    return 1;
 
     if(!str_is_xdigit(buf,len)) return 1;
 
     for (i=0,j=0; i<len; i+=2,j++) {
-	char tmp[3]={buf[i],buf[i+1],0};
+        char tmp[3]={buf[i],buf[i+1],0};
         data[j] = (unsigned char)strtol(tmp, NULL, 16);
     }
     *digits = j;
@@ -258,8 +258,8 @@ int str_is_digit(char *str, int len)
     int i;
 
     for(i = 0; i < len; i++) {
-	if (!isdigit((unsigned char)str[i]))
-	    return 0;
+        if (!isdigit((unsigned char)str[i]))
+            return 0;
     }
     return 1;
 }
@@ -268,7 +268,7 @@ int str_is_digit(char *str, int len)
 void sprint_spaces(char *buf, int nspaces)
 {
     while (nspaces--)
-	*buf++ = ' ';
+    *buf++ = ' ';
     *buf = '\0';
 }
 
@@ -287,8 +287,8 @@ int iszero(const void *buf, int len)
 int isempty(const char *buf, int len)
 {
     while (len-- > 0)
-	if (!isspace((unsigned char)(*buf++)))
-	    return 0;
+    if (!isspace((unsigned char)(*buf++)))
+        return 0;
     return 1;
 }
 
@@ -305,7 +305,7 @@ int comma_separated(char *buf, int space)
     char *dptr,*sptr;
 
     if (len>20)  // 20 chars = max for 64-bit decimal number
-        return 0;
+    return 0;
 
     for (i=0,j=0; i<len; i++,j++)
     {
@@ -313,8 +313,8 @@ int comma_separated(char *buf, int space)
             return 0;
         if (j==3)
         {
-            commas++;
-            j=0;
+                commas++;
+                j=0;
         }
     }
     if (space<commas) return 0;
@@ -345,7 +345,7 @@ void str_clean(char *str, int len)
     int index = 0;
     for(index = 0;index < len; index++) {
         if (str[index] && !isprint((unsigned char)str[index])) {
-            str[index] = '?';
+                str[index] = '?';
         }
     }
     /* BZ 5307 - strip trailing spaces */
@@ -355,9 +355,9 @@ void str_clean(char *str, int len)
 void sbfree(struct strbuf *sb)
 {
     if (sb->pbuf) {
-	free(sb->pbuf);
-	sb->pbuf = NULL;
-	sb->offset = sb->len = 0;
+        free(sb->pbuf);
+        sb->pbuf = NULL;
+        sb->offset = sb->len = 0;
     }
 }
 
@@ -380,6 +380,7 @@ int str_split(char *buf, char *argv[], int maxargc, const char *split)
         if(!argv[argc]) break;
     }
 
-    argv[maxargc-1]=NULL;	/* null terminate */
+    argv[maxargc-1]=NULL;       /* null terminate */
     return argc;
 }
+/* vim: set sw=4 ts=8 expandtab: */

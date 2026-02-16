@@ -80,3 +80,4 @@ void sbputs(struct strbuf *sb, const char *s);
 #endif
 
 #endif /* STR_H */
+/* vim: set sw=4 ts=8 expandtab: */
