@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <ctype.h>      /* isprint() */
 
-#include "os/os.h"
+#include "os/os.h"  /* IWYU pragma: keep */
 
 #include "inifile_prop.h"
 #include "crc32.h"

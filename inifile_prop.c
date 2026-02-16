@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "os/os.h"
 #include "inifile_prop.h"
 
 uint32_t get_property_value(struct section *sections, const char *sectname, const char *propname, const char *def)
