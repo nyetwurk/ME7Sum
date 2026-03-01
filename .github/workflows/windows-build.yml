@@ -5,8 +5,6 @@ on:
     branches: [ '**' ]
   pull_request:
     branches: [ '**' ]
-  release:
-    types: [ published ]
 
 env:
   artifacts: |
@@ -26,19 +24,9 @@ jobs:
       run: nmake
     - uses: rlespinasse/github-slug-action@v5
       id: slug
-      if: ${{ github.event_name != 'release' }}
       with:
         short-length: 6
     - uses: actions/upload-artifact@v6
-      if: ${{ github.event_name != 'release' }}
       with:
         name: me7sum-${{ steps.slug.outputs.GITHUB_SHA_SHORT }}-win
         path: ${{ env.artifacts }}
-    - name: Upload windows artifact to release
-      if: github.event_name == 'release' && github.event.action == 'published'
-      run: |
-        $env:artifacts > artifacts.txt
-        cmd --% /c 7z a -tzip me7sum-${{ github.ref_name }}-win.zip @artifacts.txt
-        gh release upload --clobber ${{ github.ref_name }} me7sum-${{ github.ref_name }}-win.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

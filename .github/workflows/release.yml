@@ -1,0 +1,101 @@
+# Build and release on every tag push.
+# Tags matching *-rc* → prerelease; otherwise full release.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  artifacts: |
+    me7sum
+    ME7Check_linux
+    README.md
+  artifacts_win: |
+    me7sum.exe
+    ME7Check.exe
+    README.md
+
+jobs:
+  build-unix:
+    strategy:
+      matrix:
+        os: [ ubuntu, macos ]
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: make
+        run: make
+      - name: make test
+        run: make test
+      - name: Zip and upload
+        run: |
+          ARTIFACTS="${artifacts//$'\n'/ }"
+          zip -qr me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip ${ARTIFACTS}
+        env:
+          artifacts: ${{ env.artifacts }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: me7sum-${{ github.ref_name }}-${{ matrix.os }}
+          path: me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x86
+      - name: build
+        run: nmake
+      - name: Zip and upload
+        run: |
+          $env:artifacts_win > artifacts.txt
+          cmd --% /c 7z a -tzip me7sum-${{ github.ref_name }}-win.zip @artifacts.txt
+        env:
+          artifacts_win: ${{ env.artifacts_win }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: me7sum-${{ github.ref_name }}-win
+          path: me7sum-${{ github.ref_name }}-win.zip
+
+  release:
+    needs: [ build-unix, build-windows ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v6
+        with:
+          pattern: me7sum-${{ github.ref_name }}-*
+          path: artifacts
+          merge-multiple: false
+
+      - name: Generate changelog
+        uses: taiki-e/install-action@git-cliff
+      - name: Run git-cliff
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == *-rc* ]]; then
+            git-cliff --latest --strip header -o release-notes.md
+          else
+            git-cliff --latest --strip header --ignore-tags 'v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+' -o release-notes.md
+          fi
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
+          files: artifacts/**/*.zip

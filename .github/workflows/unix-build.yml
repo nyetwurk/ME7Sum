@@ -5,8 +5,6 @@ on:
     branches: [ '**' ]
   pull_request:
     branches: [ '**' ]
-  release:
-    types: [ published ]
 
 env:
   artifacts: |
@@ -28,20 +26,9 @@ jobs:
       run: make test
     - uses: rlespinasse/github-slug-action@v5
       id: slug
-      if: ${{ github.event_name != 'release' }}
       with:
         short-length: 6
     - uses: actions/upload-artifact@v6
-      if: ${{ github.event_name != 'release' }}
       with:
         name: me7sum-${{ steps.slug.outputs.GITHUB_SHA_SHORT }}-${{ matrix.os }}
         path: ${{ env.artifacts }}
-    - name: Upload ${{ matrix.os }} artifact to release
-      if: github.event_name == 'release' && github.event.action == 'published'
-      run: |
-        ARTIFACTS="${artifacts//$'\n'/ }"
-        echo "Zipping ${ARTIFACTS}"
-        zip -qr me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip ${ARTIFACTS}
-        gh release upload --clobber ${{ github.ref_name }} me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
