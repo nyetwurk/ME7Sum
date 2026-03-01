@@ -4,12 +4,12 @@ This document describes the GitHub Actions workflows and how releases are publis
 
 ## GitHub Workflows
 
-Two workflows run on every push/PR to `master` and on every **published** release:
+Two workflows run on every push/PR to **any branch** and on every **published** release:
 
 ### Triggers
 
-- **push** to `master` — builds run, artifacts uploaded to the Actions run (not to a release)
-- **pull_request** to `master` — same as push
+- **push** to any branch — builds run, artifacts uploaded to the Actions run (not to a release)
+- **pull_request** to any branch — same as push
 - **release: published** — builds run and artifacts are uploaded to the release
 
 ### Important: Release vs Tag

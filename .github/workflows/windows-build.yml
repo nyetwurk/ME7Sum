@@ -2,9 +2,9 @@ name: Windows Build
 
 on:
   push:
-    branches: [ master ]
+    branches: [ '**' ]
   pull_request:
-    branches: [ master ]
+    branches: [ '**' ]
   release:
     types: [ published ]
 
