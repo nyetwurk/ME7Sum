@@ -35,7 +35,7 @@ jobs:
           zip -qr me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip ${ARTIFACTS}
         env:
           artifacts: ${{ env.artifacts }}
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: me7sum-${{ github.ref_name }}-${{ matrix.os }}
           path: me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip
@@ -55,7 +55,7 @@ jobs:
           cmd --% /c 7z a -tzip me7sum-${{ github.ref_name }}-win.zip @artifacts.txt
         env:
           artifacts_win: ${{ env.artifacts_win }}
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: me7sum-${{ github.ref_name }}-win
           path: me7sum-${{ github.ref_name }}-win.zip

@@ -28,7 +28,7 @@ jobs:
       id: slug
       with:
         short-length: 6
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: me7sum-${{ steps.slug.outputs.GITHUB_SHA_SHORT }}-${{ matrix.os }}
         path: ${{ env.artifacts }}
