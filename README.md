@@ -42,9 +42,7 @@ ME7Check should not fail on RSA corrected bins. If it does, please email the bin
 
 DO NOT FLASH ANY BINS without a backup ECU or a way to restore a known good bin or you may be stranded!
 
-It should generally autodetect checksum/CRC blocks, but is known not to work on non VAG Motronic bins, eg:
-
-ferrari360.bin
+It should generally autodetect checksum/CRC blocks, but is known not to work on non VAG Motronic bins.
 
 # Building
 
