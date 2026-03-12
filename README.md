@@ -1,7 +1,7 @@
 # Synopsis
-This project is under BSD open source license. Its on the most unrestrictive freeware license possible. No warranty implied or given.
+ME7Sum is a tool written in C for checksum testing/correction of Bosch ME7.1 firmware binary image dumps.
 
-It is a tool written in C for management of Bosch ME7.1 firmware dumps.
+It is published under the BSD open source license, the most unrestrictive freeware license possible. No warranty implied or given.
 
 The latest binary releases are always available [here](https://github.com/nyetwurk/ME7Sum/releases/latest).
 
@@ -17,7 +17,7 @@ To output corrected checksums:
 me7sum image.bin out.bin
 ```
 
-**If you do not supply "out.bin", ME7Sum will only check "image.bin" for errors - it wll not make any corrections**
+**If you do not supply "out.bin", ME7Sum will only check "image.bin" for errors - it will not make any corrections**
 
 Note that if me7sum cannot completely detect checksum/CRC locations correctly, it will not output a file!
 
@@ -45,7 +45,6 @@ DO NOT FLASH ANY BINS without a backup ECU or a way to restore a known good bin 
 It should generally autodetect checksum/CRC blocks, but is known not to work on non VAG Motronic bins.
 
 # Building
-
 See [BUILD.md](BUILD.md) for full build instructions and dependencies (Linux, Windows, Cygwin, macOS).
 
 Quick start: under Unix or Cygwin, `make` should work (Debian: `libgmp-dev`; Cygwin: `libgmp-devel`). Under Windows MSVC/nmake, run `build clean` then `build`. Under macOS, `brew install gmp` then `make`.
@@ -53,10 +52,5 @@ Quick start: under Unix or Cygwin, `make` should work (Debian: `libgmp-dev`; Cyg
 # Contributing
 Feel free to contribute to the project! See [RELEASE.md](RELEASE.md) for the release process and GitHub workflow behavior.
 
-nyet's ME7Sum:
-http://nefariousmotorsports.com/forum/index.php?topic=3347.0title=
-https://github.com/nyetwurk/ME7Sum/
-
-360trev's ME7Sum:
-http://nefariousmotorsports.com/forum/index.php?topic=2993.0title=
-https://github.com/360trev/ME7Sum/
+- **nyet's ME7Sum**: [Nefmoto](http://nefariousmotorsports.com/forum/index.php?topic=3347.0title=) | [GitHub](https://github.com/nyetwurk/ME7Sum/)
+- **360trev's ME7Sum**: [Nefmoto](http://nefariousmotorsports.com/forum/index.php?topic=2993.0title=) | [GitHub](https://github.com/360trev/ME7Sum/)
