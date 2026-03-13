@@ -812,14 +812,15 @@ static int GetRomInfo(const struct ImageHandle *ih, struct section *osconfig)
             continue;
         }
 
-        if(item->off+item->len >= ih->len)
+        if(item->off+item->len > ih->len)
         {
             printf("%s = INVALID OFFSET/LEN 0x%x/%d\n",info->label, item->off, item->len);
             continue;
         }
         str_data=malloc(item->len+1);
-        /* snprintf null terminates for us if string is too long :) */
-        snprintf(str_data, item->len+1, "%s", ih->d.s+item->off);       // Leave room for null termination
+        if (!str_data) continue;
+        /* Bounded copy: source may not be null-terminated within item->len */
+        snprintf(str_data, item->len+1, "%.*s", (int)item->len, ih->d.s+item->off);
         printf(" %-*s : '%s'\n", max_len, info->label, str_data);
         free(str_data);
     }
@@ -911,8 +912,8 @@ static int DoRomInfo(const struct ImageHandle *ih, struct section *osconfig)
             DEBUG_ROM("%s = 0x%x\n",offset_str,  ptr_offset);
             DEBUG_ROM("%s = %d\n",length_str,    ptr_length);
 
-            /* snprintf null terminates for us if string is too long :) */
-            snprintf(str_data, sizeof(str_data), "%s", ih->d.s+ptr_offset);
+            /* Bounded copy: source may not be null-terminated within ptr_length */
+            snprintf(str_data, sizeof(str_data), "%.*s", (int)ptr_length, ih->d.s+ptr_offset);
             if(! strcmp("true",ptr_visible))
             {
                 printf(" %-*s : '%s'\n", max_len, ptr_label, str_data);
@@ -1160,7 +1161,8 @@ static int dump_string_desc(const struct ImageHandle *ih, const struct string_de
     if (ret<0) return -1;
 
     if (ii.len) {
-        snprintf(buf, ii.len+1, "%s", ih->d.s+ii.off);
+        /* Bounded copy: source may not be null-terminated within ii.len */
+        snprintf(buf, ii.len+1, "%.*s", (int)ii.len, ih->d.s+ii.off);
         printf("%d: '%s'\n", ret, buf);
     }
 
