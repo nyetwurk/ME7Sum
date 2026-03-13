@@ -15,6 +15,9 @@ static LIST_HEAD(Records);
 // checksummed data.
 // This means we found a checksum that, if corrected, will cause a previously
 // calculated checksum to be wrong!
+// Only cross-type overlaps are reported (different names); same-name overlaps
+// are skipped (e.g. MP Block descriptor table lives inside an MP Block's
+// data range by design).
 static int test_for_data_overlap(const struct ReportRecord *rec, struct list_head *records)
 {
     int ret=0;
@@ -41,8 +44,8 @@ static int test_for_data_overlap(const struct ReportRecord *rec, struct list_hea
     return ret;
 }
 
-// Tests if new data range is in an already calculated checksum
-// This is expected.
+// Tests if new data range is in an already calculated checksum.
+// Only cross-type overlaps are reported (different names); same-name skipped.
 static int test_for_csum_overlap(struct ReportRecord *rec, struct list_head *records, const struct Range *data)
 {
     int ret=0;
