@@ -103,7 +103,7 @@ struct ReportRecord *CreateRecord(const char *name, uint32_t start, int len)
     return rr;
 }
 
-void PrintRecord(FILE *fh, struct ReportRecord *rr)
+void PrintRecord(FILE *fh, const struct ReportRecord *rr)
 {
     struct RangeList *rl;
 
@@ -117,7 +117,7 @@ void PrintRecord(FILE *fh, struct ReportRecord *rr)
     return;
 }
 
-void AddRange(struct ReportRecord *rr, struct Range *r)
+void AddRange(struct ReportRecord *rr, const struct Range *r)
 {
     struct RangeList *rl = calloc(1, sizeof(struct RangeList));
     rl->r = *r;     /* memcpy */

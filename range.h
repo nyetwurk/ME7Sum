@@ -37,10 +37,10 @@ struct ReportRecordList {
 };
 
 extern struct ReportRecord *CreateRecord(const char *name, uint32_t start, int len);
-extern void AddRange(struct ReportRecord *rr, struct Range *r);
+extern void AddRange(struct ReportRecord *rr, const struct Range *r);
 extern void AddRangeStartEnd(struct ReportRecord *rr, uint32_t start, uint32_t end);
 extern void AddRangeStartLength(struct ReportRecord *rr, uint32_t start, int len);
-extern void PrintRecord(FILE *fh, struct ReportRecord *rr);
+extern void PrintRecord(FILE *fh, const struct ReportRecord *rr);
 extern void PrintAllRecords(FILE *fh);
 extern void FreeAllRecords(void);
 extern int ProcessRecordDeps(void);

@@ -196,7 +196,7 @@ static InfoListItem romInfo[] = {
 static int FindRomInfo(const struct ImageHandle *ih);
 static int DoRomInfo(const struct ImageHandle *ih, struct section *osconfig);
 
-static int FindROMSYS(struct ImageHandle *ih);
+static int FindROMSYS(const struct ImageHandle *ih);
 static int DoROMSYS(struct ImageHandle *ih); // Startup in RSA, MP; ParamPage in RSA, MP, Main CSM, Main CRC
 
 static int FindMainCRCPreBlk(const struct ImageHandle *ih);
@@ -207,10 +207,10 @@ static int DoMainCRCs(struct ImageHandle *ih); // In ROMSYS Program Pages (somet
 static int FindMainCSMOffsets(const struct ImageHandle *ih);
 static int DoMainCSMs(struct ImageHandle *ih); // In Main Program CSM, MP
 
-static int DoROMSYS_ProgramPages(struct ImageHandle *ih); // In RSA (sometimes, in tuned files), MP
+static int DoROMSYS_ProgramPages(const struct ImageHandle *ih); // In RSA (sometimes, in tuned files), MP
 
-static int FindRSAOffsets(struct ImageHandle *ih);
-static int FindMD5Ranges(struct ImageHandle *ih);
+static int FindRSAOffsets(const struct ImageHandle *ih);
+static int FindMD5Ranges(const struct ImageHandle *ih);
 static int DoRSA(struct ImageHandle *ih); // In Main Program CSM, MP
 
 static int FindCRCTab(const struct ImageHandle *ih);
@@ -1246,7 +1246,7 @@ static int FindRomInfo(const struct ImageHandle *ih)
     return ret;
 }
 
-static int FindRSAOffsets(struct ImageHandle *ih)
+static int FindRSAOffsets(const struct ImageHandle *ih)
 {
     int s=0,n=0,e=0;
     int exponent=0;
@@ -1320,7 +1320,7 @@ static int FindRSAOffsets(struct ImageHandle *ih)
     return 0;
 }
 
-static int FindMD5Ranges(struct ImageHandle *ih)
+static int FindMD5Ranges(const struct ImageHandle *ih)
 {
     //           r                                         LL    LL
     uint8_t needle[] =
@@ -1685,7 +1685,7 @@ static int DoRSA(struct ImageHandle *ih)
     return 0;
 }
 
-static int FindROMSYS(struct ImageHandle *ih)
+static int FindROMSYS(const struct ImageHandle *ih)
 {
     /* autodetect? */
     /* verify stuff is in range? */
@@ -1750,7 +1750,7 @@ static int DoROMSYS_Startup(struct ImageHandle *ih, const struct ROMSYSDescripto
     return 0;
 }
 
-static uint32_t ProgramPageSum(struct ImageHandle *ih, const struct Range *r, struct ReportRecord *rr)
+static uint32_t ProgramPageSum(const struct ImageHandle *ih, const struct Range *r, struct ReportRecord *rr)
 {
     uint32_t sum=0;
     int addr;
@@ -1768,7 +1768,7 @@ static uint32_t ProgramPageSum(struct ImageHandle *ih, const struct Range *r, st
     return sum;
 }
 
-static int DoROMSYS_ProgramPages(struct ImageHandle *ih)
+static int DoROMSYS_ProgramPages(const struct ImageHandle *ih)
 {
     uint32_t nCalcProgramPagesSum;
     struct Range r;
