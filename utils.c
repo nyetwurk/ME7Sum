@@ -125,7 +125,7 @@ static int memcmp_mask(const void *ptr1, const void *ptr2, const void *mask, siz
 /* returns -1 on failure, start if found */
 int search_image(const struct ImageHandle *ih, size_t start, const void *needle, const void *mask, int len, int align)
 {
-    if (start<0) return -1;
+    if (len <= 0 || (size_t)len > ih->len) return -1;
 
     for (;start+len<ih->len;start+=align)
     {
@@ -142,7 +142,7 @@ void hexdump(const uint8_t *buf, int len, const char *end)
 {
     int i=len;
     while(i--)
-    printf("%02x%s", *buf++, ((i&0xf)==0 && len>32)?"\n":i?" ":"");
+        printf("%02x%s", *buf++, ((i&0xf)==0 && len>32)?"\n":i?" ":"");
     printf("%s", end);
 }
 

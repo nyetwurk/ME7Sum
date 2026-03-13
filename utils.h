@@ -76,10 +76,10 @@ struct ImageHandle {
 #define htole32(x) (x)
 #define htole16(x) (x)
 #else
+#define le16toh(x) __bswap_16(x)
 #define le32toh(x) __bswap_32(x)
 #define htole16(x) __bswap_16(x)
-#define le32toh(x) __bswap_32(x)
-#define htole16(x) __bswap_16(x)
+#define htole32(x) __bswap_32(x)
 #endif
 #endif
 
@@ -90,11 +90,11 @@ struct ImageHandle {
 #define memcpy_from_le32(dest, src, len) \
     memcpy(dest, src, len)
 #else
-#define memcpy_from_le32(dest, src, len) { \
+#define memcpy_from_le32(dest, src, len) do { \
     int i; \
-    for (i=0;i<len/4;i++) \
-        ((uint32_t *)dest)[i] = __bswap_32(((uint32_t *)src)[i]); \
-}
+    for (i=0;i<(int)(len)/4;i++) \
+        ((uint32_t *)(dest))[i] = __bswap_32(((const uint32_t *)(src))[i]); \
+} while (0)
 #endif
 
 int iload_file(struct ImageHandle *ih, const char *fname, int rw, struct strbuf *buf);
