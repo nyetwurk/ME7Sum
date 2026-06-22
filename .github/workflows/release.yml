@@ -44,11 +44,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: TheMrMilchmann/setup-msvc-dev@v4
-        with:
-          arch: x86
       - name: build
-        run: nmake
+        shell: cmd
+        run: build.cmd
       - name: Zip and upload
         run: |
           $env:artifacts_win > artifacts.txt

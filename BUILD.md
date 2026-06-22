@@ -42,15 +42,17 @@ Produces: `me7sum`, `inifile/libini.a`
 
 ### Dependencies
 
-- **Visual Studio 2017** (or compatible) — `build.cmd` expects VS 2017 at the default path
-- **nmake** — Included with Visual Studio
-- **Git** — For `GIT_VERSION`
+- **Visual Studio Build Tools 2022** (or any VS 2017+ install) with the **Desktop development with C++** workload — free download from [Visual Studio](https://visualstudio.microsoft.com/downloads/)
+- **nmake** — Included with the C++ build tools
+- **Git** — For `GIT_VERSION` (git describe)
 
-The Windows build uses **bundled MPIR** (`mpir/mpir-2017.lib`) for big-integer math. No system GMP or MPIR installation is required.
+`build.cmd` locates MSVC via `vswhere` (any edition: Community, Professional, Enterprise, or Build Tools). Override auto-detection by setting `VSINSTALL` to the Visual Studio installation directory before running `build.cmd`.
+
+The Windows build uses **bundled MPIR** (`mpir/mpir-2017.lib`) for big-integer math. No system GMP or MPIR installation is required. The library was built with the VS 2017 toolset but links with newer MSVC versions; rebuild MPIR only if linking fails after a major VS upgrade.
 
 ### Build
 
-From a normal Command Prompt (or after running `vcvarsall.bat`):
+From a normal Command Prompt:
 
 ```cmd
 build
@@ -63,7 +65,7 @@ build clean
 build
 ```
 
-`build.cmd` sets up the VS environment and runs `nmake`. Produces: `me7sum.exe`
+`build.cmd` sets up the VS environment and runs `nmake`. GitHub Actions uses the same script (`build.cmd` on `windows-latest`). Produces: `me7sum.exe`
 
 ---
 
@@ -116,13 +118,13 @@ make test   # optional
 
 ## Platform-Specific Notes
 
-| Platform   | GMP/MPIR source      | Executable suffix |
-|-----------|----------------------|-------------------|
-| Linux     | System `libgmp-dev`  | (none)            |
-| macOS     | Homebrew `gmp`       | (none)            |
-| Cygwin    | `libgmp-devel`       | `-cyg.exe`        |
-| MinGW     | System `libgmp`      | `.exe`            |
-| Windows   | Bundled `mpir`       | `.exe`            |
+| Platform | GMP/MPIR source       | Executable suffix     |
+| -------- | --------------------- | --------------------- |
+| Linux    | System `libgmp-dev`   | (none)                |
+| macOS    | Homebrew `gmp`        | (none)                |
+| Cygwin   | `libgmp-devel`        | `-cyg.exe`            |
+| MinGW    | System `libgmp`       | `.exe`                |
+| Windows  | Bundled `mpir`        | `.exe`                |
 
 ---
 

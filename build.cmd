@@ -1,28 +1,33 @@
 @echo off
-set CURDIR=%cd%
-rem SET VSVER=10.0
-SET VSVER=2017
+setlocal EnableExtensions
 
-IF "%PROGRAMFILES(X86)%"=="" (
-  GOTO x86
-) ELSE (
-  GOTO amd64
+rem Expand before parenthesized blocks - (x86) breaks batch parsing inside ( )
+set "PF86=%ProgramFiles(x86)%"
+set "PF=%ProgramFiles%"
+
+if defined VSINSTALL goto setup_env
+
+if exist "%PF86%\Microsoft Visual Studio\Installer\vswhere.exe" (
+  set "VSWHERE=%PF86%\Microsoft Visual Studio\Installer\vswhere.exe"
+) else if exist "%PF%\Microsoft Visual Studio\Installer\vswhere.exe" (
+  set "VSWHERE=%PF%\Microsoft Visual Studio\Installer\vswhere.exe"
+) else (
+  echo ERROR: vswhere not found. Install Visual Studio with the C++ workload.
+  exit /b 1
 )
 
-:amd64
-SET PROGPATH=%PROGRAMFILES(X86)%
-GOTO Common
+for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
 
-:x86
-SET PROGPATH=%PROGRAMFILES%
-GOTO Common
+if not defined VSINSTALL (
+  echo ERROR: No MSVC installation found. Install the "Desktop development with C++" workload.
+  exit /b 1
+)
 
-:Common
-rem CALL "%PROGPATH%\Microsoft Visual Studio %VSVER%\VC\vcvarsall.bat" x86
-echo "%PROGRAMFILES(X86)%\Microsoft Visual Studio\%VSVER%\Community\VC\Auxiliary\Build\vcvarsall.bat"
-CALL "%PROGRAMFILES(X86)%\Microsoft Visual Studio\%VSVER%\Community\VC\Auxiliary\Build\vcvarsall.bat" x86
+:setup_env
+echo Using Visual Studio at "%VSINSTALL%"
+call "%VSINSTALL%\VC\Auxiliary\Build\vcvarsall.bat" x86
+if errorlevel 1 exit /b 1
 
-cd %CURDIR%
-for /f "usebackq" %%i in ( `git describe --tags "--abbrev=4" --dirty --always` ) do SET GIT_VERSION=%%i
+for /f "usebackq tokens=*" %%i in (`git describe --tags "--abbrev=4" --dirty --always`) do set "GIT_VERSION=%%i"
 
-nmake %1
+nmake %*
