@@ -225,9 +225,15 @@ static int DoChecksumBlk(struct ImageHandle *ih, uint32_t nStartBlk, struct strb
 
 static void usage(const char *prog)
 {
-    printf("Usage: %s [-v] [-i <config.ini>] <inrom.bin> [outrom.bin]\n", prog);
-    printf("       %s [-v] [-i <config.ini>] [-r <report.txt>] [-s] <inrom.bin>\n", prog);
+    printf("Usage: %s [-V] [-v] [-i <config.ini>] <inrom.bin> [outrom.bin]\n", prog);
+    printf("       %s [-V] [-v] [-i <config.ini>] [-r <report.txt>] [-s] <inrom.bin>\n", prog);
     exit(-1);
+}
+
+static int print_version(void)
+{
+    printf("%s\n", __GIT_VERSION);
+    return 0;
 }
 
 static int bytecmp(const void *buf, uint8_t byte, size_t len)
@@ -310,18 +316,14 @@ int main(int argc, char **argv)
 
     memset(&buf, 0, sizeof(buf));
 
-    // information about the tool
-    printf("ME7Sum (%s) [Management tool for Bosch ME7.x firmwares]\n",
-        __GIT_VERSION);
-    printf("Inspiration from Andy Whittaker's tools and information.\n");
-    printf("Written by 360trev and nyet [BSD License Open Source].\n");
-
     opterr=0;
 
-    while ((c = getopt(argc, argv, "qsvi:r:")) != -1)
+    while ((c = getopt(argc, argv, "Vqsvi:r:")) != -1)
     {
         switch (c)
         {
+            case 'V':
+                return print_version();
             case 'q':
                 Verbose--;
                 break;
@@ -348,6 +350,12 @@ int main(int argc, char **argv)
                 return -1;
         }
     }
+
+    // information about the tool
+    printf("ME7Sum (%s) [Management tool for Bosch ME7.x firmwares]\n",
+        __GIT_VERSION);
+    printf("Inspiration from Andy Whittaker's tools and information.\n");
+    printf("Written by 360trev and nyet [BSD License Open Source].\n");
 
     if (Verbose<0) Verbose=0;
 
