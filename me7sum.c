@@ -2521,7 +2521,7 @@ static int DoMainProgramCSM(struct ImageHandle *ih)
 
     if (r[0].end + 1 != r[1].start)
     {
-        struct Range sr;
+        struct Range sr={};
         uint32_t ss, sc;
         AddRange(rr, &sr);
         sr.start = r[0].end+1;
