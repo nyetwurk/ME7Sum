@@ -7,6 +7,10 @@ on:
     tags:
       - 'v*'
 
+# contents: write for softprops/action-gh-release (create/update release + assets)
+permissions:
+  contents: write
+
 env:
   artifacts: |
     me7sum
@@ -19,6 +23,8 @@ env:
 
 jobs:
   build-unix:
+    permissions:
+      contents: read
     strategy:
       matrix:
         os: [ ubuntu, macos ]
@@ -41,6 +47,8 @@ jobs:
           path: me7sum-${{ github.ref_name }}-${{ matrix.os }}.zip
 
   build-windows:
+    permissions:
+      contents: read
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -61,8 +69,6 @@ jobs:
   release:
     needs: [ build-unix, build-windows ]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
