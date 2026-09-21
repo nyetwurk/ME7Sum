@@ -32,7 +32,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
-#include <ctype.h>      /* isprint() */
+#include <ctype.h>  /* isprint() */
 
 #include "os/os.h"  /* IWYU pragma: keep */
 
@@ -105,17 +105,17 @@ static int sbprintdesc(struct strbuf *buf, const struct MultipointDescriptor *d)
 #define MD5_MAX_BLKS 4
 // main firmware checksum validation
 struct rom_config {
-    int                     readonly;
-    int                     is_porsche;     /* non-zero if Porsche Bosch ME7.x detected */
-    uint32_t        base_address;                           /* rom base address */
+    int             readonly;
+    int             is_porsche;     /* non-zero if Porsche Bosch ME7.x detected */
+    uint32_t        base_address;   /* rom base address */
 
     struct {
-        uint32_t        n;      /* offset of modulus */
-        uint32_t        e;      /* offset of exponent */
-        uint32_t        s;      /* offset of signature */
-        uint32_t        ds; /* offset of default signature (unused?) */
-        int                     exponent;       /* actual exponent */
-        struct Range md5[MD5_MAX_BLKS];
+        uint32_t        n;              /* offset of modulus */
+        uint32_t        e;              /* offset of exponent */
+        uint32_t        s;              /* offset of signature */
+        uint32_t        ds;             /* offset of default signature (unused?) */
+        int             exponent;       /* actual exponent */
+        struct Range    md5[MD5_MAX_BLKS];
     } rsa;
     uint32_t        romsys;
     uint32_t        crctab[2];
@@ -125,9 +125,9 @@ struct rom_config {
     uint32_t        main_checksum_final;            /* two 4 byte checksum (one inv) for two blocks conctatenated above) */
     struct {
         struct Range r;
-        uint32_t        offset;
-    } crc[MAX_CRC_BLKS+1];                                  /* 0/4 is pre-region (for kbox and other) Up to 5 CRC blocks (total) to check */
-    uint32_t        csm_offset;                             /* ME7.1.1 */
+        uint32_t     offset;
+    } crc[MAX_CRC_BLKS+1];                          /* 0/4 is pre-region (for kbox and other) Up to 5 CRC blocks (total) to check */
+    uint32_t        csm_offset;                     /* ME7.1.1 */
 };
 
 struct info_config {
@@ -160,32 +160,32 @@ static int ErrorsCorrected = 0;
 //
 static PropertyListItem romProps[] = {
     // get rom region information
-    {       GET_VALUE,  &Config.base_address,                       "ignition", "rom_firmware_start",               "0x800000"},
-    {       GET_VALUE,  &Config.multipoint_block_start[0],  "ignition", "rom_checksum_block_start0",        "0"},
+    {       GET_VALUE,  &Config.base_address,               "ignition", "rom_firmware_start",       "0x800000"},
+    {       GET_VALUE,  &Config.multipoint_block_start[0],  "ignition", "rom_checksum_block_start0","0"},
     {       GET_VALUE,  &Config.multipoint_block_start[1],  "ignition", "rom_checksum_block_start", "0"},
     {       GET_VALUE,  &Config.multipoint_desc_len,        "ignition", "rom_checksum_desc_len",    "0x10"},
-    {       GET_VALUE,  &Config.main_checksum_offset,       "ignition", "rom_checksum_offset",              "0"},
-    {       GET_VALUE,  &Config.main_checksum_final,        "ignition", "rom_checksum_final",               "0"},
-    {       GET_VALUE,  &Config.crc[0].r.start,                     "ignition", "rom_crc0_start",                   "0"},
-    {       GET_VALUE,  &Config.crc[0].r.end,                       "ignition", "rom_crc0_end",                             "0"},
-    {       GET_VALUE,  &Config.crc[1].r.start,                     "ignition", "rom_crc1_start",                   "0"},
-    {       GET_VALUE,  &Config.crc[1].r.end,                       "ignition", "rom_crc1_end",                             "0"},
-    {       GET_VALUE,  &Config.crc[1].offset,                      "ignition", "rom_crc1",                                 "0"},
-    {       GET_VALUE,  &Config.crc[2].r.start,                     "ignition", "rom_crc2_start",                   "0"},
-    {       GET_VALUE,  &Config.crc[2].r.end,                       "ignition", "rom_crc2_end",                             "0"},
-    {       GET_VALUE,  &Config.crc[2].offset,                      "ignition", "rom_crc2",                                 "0"},
-    {       GET_VALUE,  &Config.crc[3].r.start,                     "ignition", "rom_crc3_start",                   "0"},
-    {       GET_VALUE,  &Config.crc[3].r.end,                       "ignition", "rom_crc3_end",                             "0"},
-    {       GET_VALUE,  &Config.crc[3].offset,                      "ignition", "rom_crc3",                                 "0"},
-    {       GET_VALUE,  &Config.crc[4].r.start,                     "ignition", "rom_crc4_start",                   "0"},
-    {       GET_VALUE,  &Config.crc[4].r.end,                       "ignition", "rom_crc4_end",                             "0"},
-    {       GET_VALUE,  &Config.crc[4].offset,                      "ignition", "rom_crc4",                                 "0"},
+    {       GET_VALUE,  &Config.main_checksum_offset,       "ignition", "rom_checksum_offset",      "0"},
+    {       GET_VALUE,  &Config.main_checksum_final,        "ignition", "rom_checksum_final",       "0"},
+    {       GET_VALUE,  &Config.crc[0].r.start,             "ignition", "rom_crc0_start",           "0"},
+    {       GET_VALUE,  &Config.crc[0].r.end,               "ignition", "rom_crc0_end",             "0"},
+    {       GET_VALUE,  &Config.crc[1].r.start,             "ignition", "rom_crc1_start",           "0"},
+    {       GET_VALUE,  &Config.crc[1].r.end,               "ignition", "rom_crc1_end",             "0"},
+    {       GET_VALUE,  &Config.crc[1].offset,              "ignition", "rom_crc1",                 "0"},
+    {       GET_VALUE,  &Config.crc[2].r.start,             "ignition", "rom_crc2_start",           "0"},
+    {       GET_VALUE,  &Config.crc[2].r.end,               "ignition", "rom_crc2_end",             "0"},
+    {       GET_VALUE,  &Config.crc[2].offset,              "ignition", "rom_crc2",                 "0"},
+    {       GET_VALUE,  &Config.crc[3].r.start,             "ignition", "rom_crc3_start",           "0"},
+    {       GET_VALUE,  &Config.crc[3].r.end,               "ignition", "rom_crc3_end",             "0"},
+    {       GET_VALUE,  &Config.crc[3].offset,              "ignition", "rom_crc3",                 "0"},
+    {       GET_VALUE,  &Config.crc[4].r.start,             "ignition", "rom_crc4_start",           "0"},
+    {       GET_VALUE,  &Config.crc[4].r.end,               "ignition", "rom_crc4_end",             "0"},
+    {       GET_VALUE,  &Config.crc[4].offset,              "ignition", "rom_crc4",                 "0"},
     { END_LIST,   0, "",""},
 };
 
 static InfoListItem romInfo[] = {
     // get rom region information
-    {       "EPK",                  GET_VALUE, &InfoConfig.EPK,                     "info", "epk",                  "0", "41"},
+    {       "EPK",          GET_VALUE, &InfoConfig.EPK,             "info", "epk",          "0", "41"},
     {       "Part Number",  GET_VALUE, &InfoConfig.part_number,     "info", "part_number",  "0", "12"},
     {       "Engine ID",    GET_VALUE, &InfoConfig.engine_id,       "info", "engine_id",    "0", "17"},
     {       "SW Version",   GET_VALUE, &InfoConfig.sw_version,      "info", "sw_version",   "0", "4"},
@@ -968,9 +968,9 @@ static int DoRomInfo(const struct ImageHandle *ih, struct section *osconfig)
 /* NEEDLE/HAYSTACK util */
 static int FindData(const struct ImageHandle *ih, const char *what,
     const uint8_t *n, const uint8_t *m, int len,    // needle, mask, len of needle/mask
-    int off_l, int off_h,                                                   // where to find hi/lo (short word offset into find array)
-    uint32_t *offset, size_t offset_len,                    // array to store discovered offsets, len of array
-    uint32_t *where)                                                                // address of match (ONLY if single match), NULL if not needed
+    int off_l, int off_h,                           // where to find hi/lo (short word offset into find array)
+    uint32_t *offset, size_t offset_len,            // array to store discovered offsets, len of array
+    uint32_t *where)                                // address of match (ONLY if single match), NULL if not needed
 {
     /* Note that off_l and off_h are SHORT WORD offsets, i.e. 1 == 2 bytes */
 
@@ -1088,7 +1088,7 @@ static int NormalizeRange(const struct ImageHandle *ih, struct Range *r)
 /* Actual work */
 static int FindEPK(const struct ImageHandle *ih)
 {
-    //                                                                              LL    LL                      HH?
+    //                                      LL    LL                      HH?
     static const uint8_t n[]={0x43, 0xF8, 0x00, 0x00, 0x9d, 0x07, 0x09, 0x80};
     static const uint8_t m[]={0xf3, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xf0};
     int i, off=0, high, low, found=0;
@@ -1908,7 +1908,7 @@ static uint32_t ProgramPageSum(const struct ImageHandle *ih, const struct Range 
     int addr;
     for(addr=r->start;addr<r->end;addr+=8*1024) {
         uint16_t *p16[2];
-        p16[0]=(uint16_t *)(ih->d.u8+addr);                     /* first word of page */
+        p16[0]=(uint16_t *)(ih->d.u8+addr);             /* first word of page */
         AddRangeStartLength(rr, addr, 2);
         p16[1]=(uint16_t *)(ih->d.u8+addr+8*1024-2);    /* last word of page */
         AddRangeStartLength(rr, addr+8*1024-2, 2);
@@ -2598,12 +2598,12 @@ static int FindMainProgramOffset(const struct ImageHandle *ih)
     printf(" Searching for main program checksum..");
     DEBUG_FLUSH_MAIN;
 
-    needle[0]=htole32(Config.base_address);                 /* 0x000000 */
+    needle[0]=htole32(Config.base_address);         /* 0x000000 */
     needle[1]=htole32(Config.base_address+0x0fbff); /* 0x00fbff */
     needle[2]=htole32(Config.base_address+0x20000); /* 0x020000 */
     needle[3]=htole32(Config.base_address+0xf00ff); /* 0x07ffff 512k flash
-                                                                                                           0x0febff oddball?
-                                                                                                           0x0fffff 1M flash */
+                                                       0x0febff oddball?
+                                                       0x0fffff 1M flash */
     mask[0]=htole32(0xffffffff);
     mask[1]=htole32(0xffffffff);
     mask[2]=htole32(0xffffffff);
@@ -2778,7 +2778,7 @@ static int FindChecksumBlks(const struct ImageHandle *ih, int which)
     if (which==0) {
         needle[0]=htole32(Config.base_address+0x24000);
         /* actually, mp #1 isn't allowed to match this,
-                   its in mp #2 */
+           its in mp #2 */
         needle[1]=htole32(Config.base_address+0x27fff);
         size=4;
     } else {
