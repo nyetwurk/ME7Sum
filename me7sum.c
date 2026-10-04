@@ -452,7 +452,7 @@ int main(int argc, char **argv)
                 ih.len=512*1024;
             ih.pad = PADDING_FF;
         } else if (bytecmp(ih.d.u8+512*1024, 0xff, 512*1024-32)==0) {
-            printf("File is padded from 512k to 1024k with 0xFF. Treating as 1024k but will try 512k CRC hardcoded blocks\n");
+            printf("File is padded from 512k to 1024k with 0xFF except the last 32 bytes. Treating as 1024k\n");
             ih.pad = PADDING_TRY_512K_CRC;
 /*
         } else if (bytecmp(ih.d.u8+512*1024, 0, 512*1024)==0) {
@@ -1108,7 +1108,7 @@ static int FindEPK(const struct ImageHandle *ih)
         i=search_image(ih, i, n, m, sizeof(n), 2);
         if (i<0 || i>max) break;
         low = le16toh(ih->d.u16[i/2+1]);
-        high = le16toh(ih->d.u16[i/2+3])>>8;    // ??
+        high = le16toh(ih->d.u16[i/2+3])>>8;    /* page byte; low byte is opcode 0x09 */
         off = (high<<16) | low;
         if (off<Config.base_address || off+sizeof(n) > Config.base_address+ih->len) {
             printf(" ERROR: INVALID ADDR 0x%x\n", off);
@@ -1520,7 +1520,8 @@ static int FindMD5Ranges(const struct ImageHandle *ih)
         uint16_t *p16 = ih->d.u16+(addr/2);
 
         count = ((p[1]&0xf0)>>4)+1;
-        /* FIXME: hardcoded HH HH to 0x0081xxxx? */
+        /* High half is not in the instruction. Images with this pattern
+         * keep the table at 0x81xxxx, so OR the file offset with 0x10000. */
         table =le16toh(p16[4])|0x10000;
         // printf("MD5 arg2 0x%04x\n", le16toh(p16[6]));
 
@@ -2382,6 +2383,88 @@ static int FindMainCRCPreBlk(const struct ImageHandle *ih)
     return 0;
 }
 
+/* r8/r9 already hold a pointer. Each block adds an offset, and r5 is the
+ * exclusive end in that same segment. The first block has no add
+ * immediate (bytes 08 80); its low half is 0.
+ *   add r8, #lo              not present on the first block
+ *   addc r9, #seg
+ *   cmp r9, #seg
+ *   jmpr cc_NE, +2
+ *   cmp r8, #(end - gap - 1)
+ *   mov r4, #gap
+ *   mov r5, #end             exclusive
+ * Returns 0 and fills Config.crc[1..] when every match is in range.
+ */
+static int FindIndirectCRCBlks(const struct ImageHandle *ih)
+{
+    static const uint8_t n[] = {
+        0x16, 0xF9, 0x00, 0x00, 0x46, 0xF9, 0x00, 0x00, 0x3D, 0x02,
+        0x46, 0xF8, 0x00, 0x00, 0x9D, 0x05, 0xE6, 0xF4, 0x00, 0x00,
+        0xC4, 0x40, 0x02, 0x00, 0x0D, 0x0A, 0xE7, 0xF8, 0x00, 0x00,
+        0xF7, 0xF8, 0x00, 0xF9, 0xF0, 0x48, 0xE6, 0xF5, 0x00, 0x00
+    };
+    static const uint8_t m[] = {
+        0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff,
+        0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00,
+        0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00
+    };
+    int i, found = 0;
+    uint32_t start[MAX_CRC_BLKS], end[MAX_CRC_BLKS];
+
+    for (i = 0; i + (int)sizeof(n) < (int)ih->len; i += 2) {
+        uint16_t seg, seg2, start_lo, end_lo, gap, cmpv;
+        uint32_t abs_s, abs_e, fs, fe;
+
+        i = search_image(ih, i, n, m, sizeof(n), 2);
+        if (i < 0)
+            break;
+
+        if (i >= 4 && ih->d.u8[i - 4] == 0x06 && ih->d.u8[i - 3] == 0xF8)
+            start_lo = le16toh(ih->d.u16[(i - 2) / 2]);
+        else if (i >= 2 && ih->d.u8[i - 2] == 0x08 && ih->d.u8[i - 1] == 0x80)
+            start_lo = 0;
+        else
+            continue;
+
+        seg = le16toh(ih->d.u16[(i + 2) / 2]);
+        seg2 = le16toh(ih->d.u16[(i + 6) / 2]);
+        cmpv = le16toh(ih->d.u16[(i + 12) / 2]);
+        gap = le16toh(ih->d.u16[(i + 18) / 2]);
+        end_lo = le16toh(ih->d.u16[(i + 38) / 2]);
+        if (seg != seg2 || end_lo <= start_lo)
+            continue;
+        if ((uint16_t)(end_lo - gap - 1) != cmpv)
+            continue;
+
+        abs_s = ((uint32_t)seg << 16) | start_lo;
+        abs_e = ((uint32_t)seg << 16) | end_lo;
+        if (abs_s < Config.base_address || abs_e <= Config.base_address)
+            continue;
+        fs = abs_s - Config.base_address;
+        fe = abs_e - 1 - Config.base_address;
+        if (fs >= ih->len || fe >= ih->len || fs > fe)
+            continue;
+
+        if (found < MAX_CRC_BLKS) {
+            start[found] = fs;
+            end[found] = fe;
+        }
+        found++;
+    }
+
+    if (found < 1 || found > MAX_CRC_BLKS)
+        return -1;
+
+    for (i = 0; i < found; i++) {
+        DEBUG_CRC("Found indirect CRC/csum block #%d 0x%x-0x%x\n",
+            i + 1, start[i], end[i]);
+        Config.crc[i + 1].r.start = start[i];
+        Config.crc[i + 1].r.end = end[i];
+    }
+    return 0;
+}
+
 static int FindMainCRCBlks(const struct ImageHandle *ih)
 {
     int i, found, ret0=-1, ret1=-1;
@@ -2458,21 +2541,8 @@ static int FindMainCRCBlks(const struct ImageHandle *ih)
         DEBUG_CRC("Too many matches (%d). CRC/csum block end find failed\n", found);
     }
 
-    if (ret0||ret1)
-    {
-        if (ih->len==512*1024 || ih->pad == PADDING_TRY_512K_CRC)
-        {
-            printf("missing\n");
-            printf(" Falling back to default 512k CRC blocks...");
-            Config.crc[1].r.start=0x10000;
-            Config.crc[1].r.end=0x13fff;
-            Config.crc[2].r.start=0x14300;
-            Config.crc[2].r.end=0x17f67;
-            Config.crc[3].r.start=0x18191;
-            Config.crc[3].r.end=0x1fbff;
-            ret0=ret1=0;
-        }
-    }
+    if (ret0 && ret1 && FindIndirectCRCBlks(ih) == 0)
+        ret0 = ret1 = 0;
 
     printf("%s\n", (ret0||ret1)?"FAIL":"OK");
     return ret0||ret1;
