@@ -118,6 +118,7 @@ struct rom_config {
         struct Range    md5[MD5_MAX_BLKS];
     } rsa;
     uint32_t        romsys;
+    int             romsys_header_ok; /* set once DoROMSYS accepts the header */
     uint32_t        crctab[2];
     uint32_t        multipoint_block_start[2];      /* start of multipoint block descriptors (two sets, first one isn't always there) */
     uint32_t        multipoint_desc_len;            /* size of descriptors */
@@ -638,7 +639,10 @@ int main(int argc, char **argv)
     if(Config.romsys)
     {
         printf("\nStep #%d: ROMSYS Program Pages\n", ++Step);
-        DoROMSYS_ProgramPages(&ih);
+        if (Config.romsys_header_ok)
+            DoROMSYS_ProgramPages(&ih);
+        else
+            printf("Step #%d: Skipping ROMSYS Program Pages (header check failed)\n", Step);
     }
     else
     {
@@ -1212,6 +1216,12 @@ static int FindECUID(const struct ImageHandle *ih)
     int found;
     uint32_t offset[2]={0,0};
     uint32_t where=0;
+    /* Stash the ECUID string-descriptor table as a far pointer.
+     *   mov r4, #lo
+     *   mov r5, #0x02xx          segment 0x200-0x20F
+     *   mov 0xE24x, r4           RAM slot; low nibble varies
+     *   mov 0xE24x, r5           0xE242/0xE244 or 0xE240/0xE242
+     */
     // E6 F4 .. .. E6 F5 06 02 F6 F4 42 E2 F6 F5 44 E2
     // E6 F4 .. .. E6 F5 06 02 F6 F4 40 E2 F6 F5 42 E2
     // \e6f4..e6f50602f6f4.e2f6f5.e2
@@ -1474,6 +1484,15 @@ static int FindRSAOffsets(const struct ImageHandle *ih)
 
 static int FindMD5Ranges(const struct ImageHandle *ih)
 {
+    /* MD5 range setup. The high nibble of byte 1 is count-1 (movb
+     * immediate; mask 0xcf). Word 4 is the near address of the start
+     * table, OR'd with 0x10000 below.
+     *   movb RLn, #count-1
+     *   movb <mem>, RLn          wildcard
+     *   mov r4, <start table>
+     *   mov r5, <end table>
+     *   mov <mem>, r4            destination varies
+     */
     //           r                                         LL    LL
     uint8_t needle[] =
         {0xE1, 0x08, 0xF7, 0xF8, 0x00, 0xF0, 0xF2, 0xF4, 0x00, 0x00, 0xF2, 0xF5, 0x00, 0x00, 0xF6, 0xF4};
@@ -1846,10 +1865,13 @@ static int FindROMSYS(const struct ImageHandle *ih)
 }
 
 struct ROMSYSDescriptor {
-    uint32_t                res00_0F[4];            /* +0x00-0x0F */
+    uint32_t                res00_07[2];            /* +0x00-0x07 */
+    uint32_t                sections_off;           /* +0x08 flash_sections_table offset */
+    uint32_t                checksums_off;          /* +0x0C flash_checksums_table offset */
 
     uint32_t                all_param_sum_p;        /* +0x10 */
-    uint32_t                res14_1F[3];            /* +0x14-0x1F */
+    uint32_t                flash_top;              /* +0x14 absolute ROM end address */
+    uint32_t                res18_1F[2];            /* +0x18-0x1F */
 
     uint32_t                res20_2F[4];            /* +0x20-0x2F */
 
@@ -1857,6 +1879,69 @@ struct ROMSYSDescriptor {
     uint32_t                startup_sum;            /* +0x38 */
     uint32_t                program_pages_csum;     /* +0x3C */
 };
+
+/* Stock VAG images store these; ME7Check indexes the sums through them. */
+#define ROMSYS_SECTIONS_OFF     0x20u
+#define ROMSYS_CHECKSUMS_OFF    0x38u
+#define ROMSYS_TOP_512K         0x0087FFFFu
+#define ROMSYS_TOP_1MB          0x008FFFFFu
+#define ROMSYS_TOP_PORSCHE      0x00837FFFu  /* program pages end at file offset 0x37FFF */
+
+/*
+ * Require the layout DoROMSYS_* hardcodes, and a flash top that matches the
+ * file length. One uncorrectable error covers every disagreeing word.
+ * Returns 0 and sets Config.romsys_header_ok on success.
+ */
+static int CheckROMSYSHeader(const struct ImageHandle *ih, const struct ROMSYSDescriptor *desc)
+{
+    int ok = 1;
+
+    Config.romsys_header_ok = 0;
+
+    if (desc->sections_off != ROMSYS_SECTIONS_OFF) {
+        printf(" ** ERROR! ROMSYS +0x08 sections offset 0x%08X, expected 0x%08X **\n",
+            desc->sections_off, ROMSYS_SECTIONS_OFF);
+        ok = 0;
+    }
+    if (desc->checksums_off != ROMSYS_CHECKSUMS_OFF) {
+        printf(" ** ERROR! ROMSYS +0x0C checksums offset 0x%08X, expected 0x%08X **\n",
+            desc->checksums_off, ROMSYS_CHECKSUMS_OFF);
+        ok = 0;
+    }
+
+    if (Config.is_porsche) {
+        if (ih->len != 512*1024 || desc->flash_top != ROMSYS_TOP_PORSCHE) {
+            printf(" ** ERROR! ROMSYS +0x14 flash top 0x%08X (file %u bytes), expected 0x%08X on a 512KB Porsche image **\n",
+                desc->flash_top, (unsigned)ih->len, ROMSYS_TOP_PORSCHE);
+            ok = 0;
+        }
+    } else if (ih->len == 512*1024) {
+        if (desc->flash_top != ROMSYS_TOP_512K) {
+            printf(" ** ERROR! ROMSYS +0x14 flash top 0x%08X, expected 0x%08X for a 512KB image **\n",
+                desc->flash_top, ROMSYS_TOP_512K);
+            ok = 0;
+        }
+    } else if (ih->len == 1024*1024) {
+        if (desc->flash_top != ROMSYS_TOP_1MB) {
+            printf(" ** ERROR! ROMSYS +0x14 flash top 0x%08X, expected 0x%08X for a 1MB image **\n",
+                desc->flash_top, ROMSYS_TOP_1MB);
+            ok = 0;
+        }
+    } else {
+        printf(" ** ERROR! ROMSYS header: file length %u is not 512KB or 1MB **\n",
+            (unsigned)ih->len);
+        ok = 0;
+    }
+
+    if (!ok) {
+        ErrorsUncorrectable++;
+        printf(" Skipping ROMSYS sums\n");
+        return -1;
+    }
+
+    Config.romsys_header_ok = 1;
+    return 0;
+}
 
 static int DoROMSYS_Startup(struct ImageHandle *ih, const struct ROMSYSDescriptor *desc)
 {
@@ -1930,7 +2015,7 @@ static int DoROMSYS_ProgramPages(const struct ImageHandle *ih)
     uint32_t prog_end;
 
     /*
-     * Read upper program page boundary from ROMSYS+0x14 (res14_1F[0]).
+     * Read upper program page boundary from ROMSYS+0x14 (flash_top).
      * This field stores the absolute ROM end address (e.g. 0x0083FFFF for
      * VAG 256k, 0x0087FFFF for VAG 512k, 0x0083 7FFF for Porsche 986/996).
      * Subtracting base_address gives the ROM-file offset.  Fallback to
@@ -1939,7 +2024,7 @@ static int DoROMSYS_ProgramPages(const struct ImageHandle *ih)
     {
         const struct ROMSYSDescriptor *rs =
             (const struct ROMSYSDescriptor *)(ih->d.u8 + Config.romsys);
-        uint32_t prog_end_abs = le32toh(rs->res14_1F[0]);
+        uint32_t prog_end_abs = le32toh(rs->flash_top);
         if (prog_end_abs > Config.base_address &&
             prog_end_abs - Config.base_address < ih->len) {
             prog_end = prog_end_abs - Config.base_address;
@@ -2058,15 +2143,15 @@ static int DoROMSYS(struct ImageHandle *ih)
 
     memcpy_from_le32(&desc, ih->d.u8+Config.romsys, sizeof(desc));
 
-    DEBUG_ROMSYS("00 0x%08X 0x%08X 0x%08X 0x%08X\n",
-        desc.res00_0F[0], desc.res00_0F[1],
-        desc.res00_0F[2], desc.res00_0F[3]);
+    DEBUG_ROMSYS("00 0x%08X 0x%08X sections 0x%08X checksums 0x%08X\n",
+        desc.res00_07[0], desc.res00_07[1],
+        desc.sections_off, desc.checksums_off);
 
     DEBUG_ROMSYS("allparam csum @0x%08X\n", desc.all_param_sum_p);
 
-    DEBUG_ROMSYS("14 0x%08X 0x%08X 0x%08X\n",
-        desc.res14_1F[0], desc.res14_1F[1],
-        desc.res14_1F[2]);
+    DEBUG_ROMSYS("flash top 0x%08X 0x%08X 0x%08X\n",
+        desc.flash_top, desc.res18_1F[0],
+        desc.res18_1F[1]);
 
     DEBUG_ROMSYS("20 0x%08X 0x%08X 0x%08X 0x%08X\n",
         desc.res20_2F[0], desc.res20_2F[1],
@@ -2078,6 +2163,9 @@ static int DoROMSYS(struct ImageHandle *ih)
     DEBUG_ROMSYS("startup_sum %08X\n", desc.startup_sum);
 
     DEBUG_ROMSYS("program_pages_csum %08X\n", desc.program_pages_csum);
+
+    if (CheckROMSYSHeader(ih, &desc))
+        return -1;
 
     result |= DoROMSYS_Startup(ih, &desc);
     result |= DoROMSYS_ParamPage(ih, &desc);
@@ -2143,6 +2231,19 @@ static int FindCRCTab(const struct ImageHandle *ih)
     uint32_t where=0;
 
 
+    /* Index a uint32 CRC table: zero-extend the data byte, then shl #2.
+     * needle0 loads it from [r0] via RL3; needle1 zero-extends RL6.
+     *   mov r4, #lo              even address
+     *   mov r5, #seg             0x80-0x83
+     *   movb RL3, [r0]           needle0
+     *   movbz r2, RL3            needle0; needle1 is movbz r2, RL6
+     *   shl r2, #2
+     *   mov r3, #0
+     *   add r4, r2
+     *   addc r5, r3
+     *   calls 0x00:xxxx          address varies; far load
+     *   mov DPP0, #0x204         0xFE00
+     */
     // E6 F4 02 D8 E6 F5 81 00 A9 60 C0 62 5C 22
     // E6 F4 6A E7 E6 F5 81 00 A9 60 C0 62 5C 22
     // e6 f4 5a 77 e6 f5 82 00 a9 60 c0 62 5c 22
@@ -2243,6 +2344,15 @@ static int FindMainCRCPreBlk(const struct ImageHandle *ih)
     int found;
     uint32_t offset=0;
     uint32_t where=0;
+    /* CRC of the short pre-block. Length is the high nibble of the
+     * mov r14 immediate (ih->d.u8[where+9] >> 4).
+     *   mov r12, #lo
+     *   mov r13, #seg            0x80-0x8F
+     *   mov r14, #len
+     *   calls <varies>
+     *   mov 0xF9xx, r4           store CRC low
+     *   mov 0xF9xx, r5           store CRC high
+     */
     //                                LL    LL                HH    HH          s
     uint8_t needle[] = {0xE6, 0xFC, 0x00, 0x00, 0xE6, 0xFD, 0x80, 0x00, 0xE0, 0x0E, 0xDA, 0x00, 0x00, 0x00, 0xF6, 0xF4};
     uint8_t   mask[] = {0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xf0, 0xff, 0xff, 0x0f, 0xff, 0x00, 0x00, 0x00, 0xff, 0xff};
@@ -2276,9 +2386,25 @@ static int FindMainCRCBlks(const struct ImageHandle *ih)
 {
     int i, found, ret0=-1, ret1=-1;
     uint32_t offset[MAX_CRC_BLKS];
+    /* Block start in r8/r9. <mem> is 0xF9xx or 0xFAxx.
+     *   mov r8, #lo
+     *   mov r9, #seg             0x80-0x8F
+     *   mov r4, <mem>
+     *   sub <mem>, 0xFF1E        0xFF1E reads as 0xFFFF
+     *   mov r5, r4
+     */
     //                            LL    LL                HH    HH
     uint8_t n0[] = {0xE6, 0xF8, 0x00, 0x00, 0xE6, 0xF9, 0x80, 0x00, 0xF2, 0xF4 /*, 0x00, 0x00, 0x24, 0x8F */};
     uint8_t m0[] = {0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xf0, 0xff, 0xff, 0xff /*, 0x00, 0x00, 0xff, 0xff */};
+    /* Length = end - (start + scale). Preceded by mov r11,#0; add r8,r10.
+     *   addc r9, r11
+     *   mov r4, #lo              block end
+     *   mov r5, #seg
+     *   sub r4, #adj             low byte varies, high byte is 0
+     *   subc r5, #0
+     *   sub r4, r8
+     *   subc r5, r9
+     */
     //                                        LL    LL                HH    HH
     uint8_t n1[] = {0x10, 0x9B, 0xE6, 0xF4, 0x00, 0x00, 0xE6, 0xF5, 0x80, 0x00 /*, 0x26, 0xF4, 0x9B, 0xE6 */};
     uint8_t m1[] = {0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xf0, 0xff /*, 0xff, 0xff, 0xff, 0xff */};
@@ -2361,6 +2487,14 @@ static int FindMainCRCOffsets(const struct ImageHandle *ih)
 {
     int i, found;
     uint32_t offset[MAX_CRC_OFFSETS];
+    /* Address of a stored CRC in r4/r5. The previous word is mov <mem>, r4.
+     *   mov <mem>, r5
+     *   mov r4, #lo              even
+     *   mov r5, #seg             0x80-0x8F
+     *   calls 0x00:xxxx          target varies
+     *   mov DPP0, #0x204
+     *   nop
+     */
     //                                                        LL    LL                HH    HH
     uint8_t needle[] = {0xF6, 0xF5, 0x00, 0x00, 0xE6, 0xF4, 0x00, 0x00, 0xE6, 0xF5, 0x80, 0x00, 0xDA, 0x00 /*, 0x00, 0x00, 0xe6, 0x00, 0x04, 0x02 */};
     uint8_t   mask[] = {0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x01, 0x00, 0xff, 0xff, 0xf0, 0xff, 0xff, 0xff /*, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff */};
@@ -2406,6 +2540,16 @@ static int FindMainCSMOffsets(const struct ImageHandle *ih)
 {
     int found;
     uint32_t offset;
+    /* Address of the stored byte-checksum in r4/r5.
+     * needle0 begins at movb RL6, #0.
+     * needle1 begins on the #4 of the preceding movb [r0+#4], RL5
+     * (E1 0A E4 A0 is the previous two words: movb RL5, #0).
+     *   mov r4, #lo              even
+     *   mov r5, #seg             0x80-0x8F
+     *   calls 0x00:xxxx          target varies
+     *   mov DPP0, #0x204
+     *   nop
+     */
     //                                             LL    LL                HH    HH
     uint8_t needle0[] = {0xE1, 0x0C, 0xE6, 0xF4, 0x00, 0x00, 0xE6, 0xF5, 0x80, 0x00, 0xDA, 0x00 /*, 0xf0, 0xe1, 0x0c, 0xe6 */};
     uint8_t needle1[] = {0x04, 0x00, 0xE6, 0xF4, 0x00, 0x00, 0xE6, 0xF5, 0x80, 0x00, 0xDA, 0x00 /*, 0xd8, 0x7e, 0xe6, 0x00 */};
