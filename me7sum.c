@@ -120,6 +120,7 @@ struct rom_config {
     uint32_t        romsys;
     int             romsys_header_ok; /* set once DoROMSYS accepts the header */
     uint32_t        crctab[2];
+    int             crc_runtime;   /* table is built in RAM; none embedded */
     uint32_t        multipoint_block_start[2];      /* start of multipoint block descriptors (two sets, first one isn't always there) */
     uint32_t        multipoint_desc_len;            /* size of descriptors */
     uint32_t        main_checksum_offset;           /* two start/end pairs, one at offset, other at offset+8 */
@@ -530,7 +531,7 @@ int main(int argc, char **argv)
             FindCRCTab(&ih);
         if(Config.crctab[0]) {
             DoCRCTab(&ih);
-        } else {
+        } else if (!Config.crc_runtime) {
             printf("Step #%d: ERROR! Couldn't find CRC table(s)\n", Step);
             ErrorsUncorrectable++;
         }
@@ -2211,6 +2212,19 @@ static int crc_table_fallback(const struct ImageHandle *ih, uint32_t *off)
     return found;
 }
 
+/* Reflected CRC-32 (poly 0xEDB88320) built in RAM, one bit at a time.
+ * xor r4, #0x8320 / xor r5, #0xedb8 is one round. Called only when no
+ * embedded table walk was found (8N0906018CB).
+ */
+static int crc_table_runtime(const struct ImageHandle *ih)
+{
+    static const uint8_t needle[] = {
+        0x56,0xf4,0x20,0x83, 0x56,0xf5,0xb8,0xed
+    };
+
+    return search_image(ih, 0, needle, NULL, sizeof(needle), 2) >= 0;
+}
+
 static int locate_helper(const struct ImageHandle *ih, uint32_t addr)
 {
     uint8_t needle[6]={0,0,0,0,0,0};
@@ -2242,7 +2256,7 @@ static int locate_helper(const struct ImageHandle *ih, uint32_t addr)
 static int FindCRCTab(const struct ImageHandle *ih)
 {
     uint32_t off[2]={0,0};
-    int i, found=0;
+    int i, found=0, no_walk;
     uint32_t where=0;
 
 
@@ -2285,6 +2299,8 @@ static int FindCRCTab(const struct ImageHandle *ih)
     if (found<1 || found>2)
         found=FindData(ih, "CRC table", needle1, mask1, sizeof(needle1), 1, 3, off, 2, &where);
 
+    no_walk = (found<1);
+
     if (found<1 || found>2) {
         printf("missing\n");
     } else {
@@ -2305,6 +2321,11 @@ static int FindCRCTab(const struct ImageHandle *ih)
         int temp = crc_table_fallback(ih, off);
         printf(" Searching for CRC table(s) using fallback...");
         if (temp<1 || temp>2) {
+            if (no_walk && crc_table_runtime(ih)) {
+                Config.crc_runtime = 1;
+                printf("generated at runtime\n");
+                return 0;
+            }
             printf("UNDEFINED\n");
             return -1;
         }
