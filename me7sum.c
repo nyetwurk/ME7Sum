@@ -224,8 +224,10 @@ static int FindMainProgramOffset(const struct ImageHandle *ih);
 static int FindMainProgramFinal(const struct ImageHandle *ih);
 static int DoMainProgramCSM(struct ImageHandle *ih); // In MP
 
+static int FindBgChecksums(const struct ImageHandle *ih, uint32_t *offs, int max);
 static int FindChecksumBlks(const struct ImageHandle *ih, int which);
-static int DoChecksumBlk(struct ImageHandle *ih, uint32_t nStartBlk, struct strbuf *buf, int bootrom);
+static int DoChecksumBlk(struct ImageHandle *ih, uint32_t nStartBlk, struct strbuf *buf, int bootrom, const char *name);
+static int DoBgChecksums(struct ImageHandle *ih);
 
 static void usage(const char *prog)
 {
@@ -656,6 +658,18 @@ int main(int argc, char **argv)
 
 
     //
+    // Background checksums: word-sum descriptors outside the MP table
+    //
+    printf("\nStep #%d: Reading Background Checksums ..\n", ++Step);
+    if (Config.is_porsche)
+        printf("Step #%d: Skipping Background Checksums (Porsche ME7.x - not applicable)\n", Step);
+    else
+        DoBgChecksums(&ih);
+
+    if(summary && summary<=Step) goto out;
+
+
+    //
     // Main program checksums
     //
     printf("\nStep #%d: Reading Main Program Checksums ..\n", ++Step);
@@ -723,7 +737,7 @@ int main(int argc, char **argv)
                 sbprintf(&buf, "%2d) ",iTemp+1);
                 result = DoChecksumBlk(&ih,
                     Config.multipoint_block_start[i]+(Config.multipoint_desc_len*iTemp),
-                    &buf, bootrom);
+                    &buf, bootrom, "MP Block");
                 if (buf.pbuf) {
                     if (iTemp<3 || result<0 || Verbose>0 || iTemp>MAX_MP_BLOCK_LEN-4)
                     {
@@ -2893,18 +2907,17 @@ static int DoMainProgramCSM(struct ImageHandle *ih)
         return -1;
     }
 
-    // block 1
+    // block 1. The hole before block 2 is skipped, so it stays unregistered.
     nCalcChksum = CalcChecksumBlk16(ih, &r[0]);
     printf(" 1) 0x%06X-0x%06X CalcChk: %08X\n", r[0].start, r[0].end, nCalcChksum);
+    AddRange(rr, &r[0]);
 
     if (r[0].end + 1 != r[1].start)
     {
         struct Range sr={};
         uint32_t ss, sc;
-        AddRange(rr, &sr);
         sr.start = r[0].end+1;
         sr.end = r[1].start-1;
-        //struct Range sr = {.start = 0x10000, .end = 0x1FFFF};
         ss = CalcChecksumBlk16(ih, &sr);
         sc = crc32(0, ih->d.u8+sr.start, sr.end-sr.start+1);
         printf("    0x%06X-0x%06X CalcChk: %08X CalcCRC: %08X SKIPPED\n",
@@ -2977,6 +2990,23 @@ static int DoMainProgramCSM(struct ImageHandle *ih)
     return 0;
 }
 
+/* Background checksum descriptors: at most the anchor plus a few predecessors. */
+#define BG_CSUM_MAX 4
+#define BG_CSUM_MAX_LEN (64*1024)
+
+/* which=0 needle is base+0x24000, which is also the outer background block. */
+static int IsBgChecksumBlk(const struct ImageHandle *ih, uint32_t off)
+{
+    uint32_t offs[BG_CSUM_MAX];
+    int n, k;
+
+    n = FindBgChecksums(ih, offs, BG_CSUM_MAX);
+    for (k = 0; k < n; k++)
+        if (offs[k] == off)
+            return 1;
+    return 0;
+}
+
 /* which=0: MP block #1 */
 /* which=1: MP block #2 */
 static int FindChecksumBlks(const struct ImageHandle *ih, int which)
@@ -3018,6 +3048,9 @@ static int FindChecksumBlks(const struct ImageHandle *ih, int which)
             /* for mp block 1, don't be picky about inv */
             if ((which==0) || desc->csum.v==~desc->csum.iv)
             {
+                /* outer BG block starts at base+0x24000; it is not MP table 1 */
+                if (which==0 && IsBgChecksumBlk(ih, (uint32_t)i))
+                    continue;
                 /* make sure we don't match the mp #2 when looking for #1 */
                 if(which || desc->r.end != needle[1]) {
                     DEBUG_MULTIPOINT("%d: Found possible multipoint descriptor #%d at 0x%x\n",
@@ -3107,12 +3140,104 @@ static int MP_callback(void *data, struct ReportRecord *rr)
     return 0;
 }
 
+/* Predecessor of the anchor: in-image range, even length, complement matches. */
+static int BgDescOk(const struct ImageHandle *ih, uint32_t off)
+{
+    struct MultipointDescriptor desc;
+    uint32_t len;
+
+    if (off + sizeof(desc) > ih->len)
+        return 0;
+    memcpy_from_le32(&desc, ih->d.u8+off, sizeof(desc));
+    if (desc.csum.v != ~desc.csum.iv)
+        return 0;
+    if (desc.r.start < Config.base_address || desc.r.end < Config.base_address)
+        return 0;
+    if (desc.r.start >= Config.base_address + ih->len ||
+        desc.r.end >= Config.base_address + ih->len)
+        return 0;
+    if (desc.r.start >= desc.r.end)
+        return 0;
+    len = desc.r.end - desc.r.start + 1;
+    if ((len & 1) || len > BG_CSUM_MAX_LEN)
+        return 0;
+    return 1;
+}
+
+/* offs[] is earliest descriptor first. 0 if absent or ambiguous. */
+static int FindBgChecksums(const struct ImageHandle *ih, uint32_t *offs, int max)
+{
+    uint32_t anchor = 0;
+    uint32_t stack[BG_CSUM_MAX];
+    uint32_t i, lim, d;
+    int count;
+
+    lim = ih->len < 0x20000 ? (uint32_t)ih->len : 0x20000;
+    if (lim < 0x10000 + sizeof(struct MultipointDescriptor))
+        return 0;
+
+    for (i = 0x10000; i + sizeof(struct MultipointDescriptor) <= lim; i += 2) {
+        struct MultipointDescriptor desc;
+
+        memcpy_from_le32(&desc, ih->d.u8+i, sizeof(desc));
+        if (desc.r.start == Config.base_address + 0x14000 &&
+            desc.r.end == Config.base_address + i + 15) {
+            if (anchor)
+                return 0;
+            anchor = i;
+        }
+    }
+    if (!anchor || max < 1)
+        return 0;
+
+    count = 0;
+    d = anchor;
+    stack[count++] = d;
+    while (count < BG_CSUM_MAX && count < max && d >= 0x10000 + 16) {
+        uint32_t prev = d - 16;
+
+        if (!BgDescOk(ih, prev))
+            break;
+        stack[count++] = prev;
+        d = prev;
+    }
+    for (i = 0; i < (uint32_t)count; i++)
+        offs[i] = stack[count - 1 - (int)i];
+    return count;
+}
+
+static int DoBgChecksums(struct ImageHandle *ih)
+{
+    uint32_t offs[BG_CSUM_MAX];
+    int n, i;
+
+    printf(" Searching for background checksums...");
+    n = FindBgChecksums(ih, offs, BG_CSUM_MAX);
+    if (n <= 0) {
+        printf("missing\n");
+        return 0;
+    }
+    printf("OK\n");
+    for (i = 0; i < n; i++) {
+        struct strbuf buf;
+
+        memset(&buf, 0, sizeof(buf));
+        sbprintf(&buf, "%2d) ", i+1);
+        DoChecksumBlk(ih, offs[i], &buf, 0, "BG Checksum");
+        if (buf.pbuf) {
+            printf("%s", buf.pbuf);
+            free(buf.pbuf);
+        }
+    }
+    return 0;
+}
+
 // Reads the individual checksum blocks that start at nStartBlk
 // -2 for ignored bootrom block
 // -1 for error
 //  0 for no error
 //  1 for last block
-static int DoChecksumBlk(struct ImageHandle *ih, uint32_t nStartBlk, struct strbuf *buf, int bootrom)
+static int DoChecksumBlk(struct ImageHandle *ih, uint32_t nStartBlk, struct strbuf *buf, int bootrom, const char *name)
 {
     // read the ROM byte by byte to make this code endian independant
     // C16x processors are little endian
@@ -3169,7 +3294,7 @@ static int DoChecksumBlk(struct ImageHandle *ih, uint32_t nStartBlk, struct strb
         nCalcChksum = desc.csum.v;
         sbprintf(buf, " Boot: (whitelisted)");
     } else {
-        struct ReportRecord *rr = CreateRecord("MP Block", nCsumAddr, sizeof(desc.csum));
+        struct ReportRecord *rr = CreateRecord(name, nCsumAddr, sizeof(desc.csum));
         rr->callback = MP_callback;
         rr->cb_data = ih;
         AddRange(rr, &desc.r);
