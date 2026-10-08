@@ -1,0 +1,26 @@
+name: Fetch corpus
+description: Fetch the private ecu-corpus submodule with a GitHub App token and make corpus tests mandatory.
+
+inputs:
+  client-id:
+    required: true
+  private-key:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - id: token
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ inputs.client-id }}
+        private-key: ${{ inputs.private-key }}
+        owner: nyetlabs
+        repositories: ecu-corpus
+    - shell: bash
+      env:
+        TOKEN: ${{ steps.token.outputs.token }}
+      run: |
+        git config --global url."https://x-access-token:${TOKEN}@github.com/nyetlabs/ecu-corpus".insteadOf https://github.com/nyetlabs/ecu-corpus
+        git submodule update --init --checkout --depth 1 corpus
+        echo XDFKIT_REQUIRE_CORPUS=1 >>"$GITHUB_ENV"
