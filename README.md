@@ -7,7 +7,7 @@ Supported ECU families:
 
 It is published under the BSD open source license, the most unrestrictive freeware license possible. No warranty implied or given.
 
-The latest binary releases are always available [here](https://github.com/nyetwurk/ME7Sum/releases/latest).
+The latest binary releases are always available [here](https://github.com/nyetlabs/ME7Sum/releases/latest).
 
 # Running
 To check image.bin:
@@ -54,7 +54,7 @@ ME7Check may detect such modifications, but there is no way for it to be 100% su
 
 Never use ME7Sum on a file that you your self did not write.
 
-**Some files may require ME7Sum to be run on them iteratively, [see Issue 7](https://github.com/nyetwurk/ME7Sum/issues/7).**
+**Some files may require ME7Sum to be run on them iteratively, [see Issue 7](https://github.com/nyetlabs/ME7Sum/issues/7).**
 
 If ME7Check fails on a ME7Sum fixed file after a single pass, please post or email me the file. You may be able to get all the checksums properly fixed by re-running ME7Sum on its own outputted file.
 
@@ -70,5 +70,5 @@ Quick start: under Unix or Cygwin, `make` should work (Debian: `libgmp-dev`; Cyg
 # Contributing
 Feel free to contribute to the project! See [RELEASE.md](RELEASE.md) for the release process and GitHub workflow behavior.
 
-- **nyet's ME7Sum**: [Nefmoto](http://nefariousmotorsports.com/forum/index.php?topic=3347.0title=) | [GitHub](https://github.com/nyetwurk/ME7Sum/)
+- **nyet's ME7Sum**: [Nefmoto](http://nefariousmotorsports.com/forum/index.php?topic=3347.0title=) | [GitHub](https://github.com/nyetlabs/ME7Sum/)
 - **360trev's ME7Sum**: [Nefmoto](http://nefariousmotorsports.com/forum/index.php?topic=2993.0title=) | [GitHub](https://github.com/360trev/ME7Sum/)

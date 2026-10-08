@@ -97,8 +97,8 @@ commit_parsers = [
 ]
 # Rewrite commit messages before display: (#123) → link; bare #123 → link (avoids matching inside [...])
 commit_preprocessors = [
-  { pattern = '\\(#([0-9]+)\\)', replace = "([#$1](https://github.com/nyetwurk/ME7Sum/issues/$1))" },
-  { pattern = "(^|[^\\[])#([0-9]+)", replace = "$1[#$2](https://github.com/nyetwurk/ME7Sum/issues/$2)" },
+  { pattern = '\\(#([0-9]+)\\)', replace = "([#$1](https://github.com/nyetlabs/ME7Sum/issues/$1))" },
+  { pattern = "(^|[^\\[])#([0-9]+)", replace = "$1[#$2](https://github.com/nyetlabs/ME7Sum/issues/$2)" },
 ]
 # Include commits that do not match any commit_parser (they go to "Other").
 filter_commits = false
