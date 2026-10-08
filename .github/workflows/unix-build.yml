@@ -21,8 +21,15 @@ jobs:
       matrix:
         os: [ 'ubuntu', 'macos']
     runs-on: ${{ matrix.os }}-latest
+    env:
+      HAS_CORPUS: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
     - uses: actions/checkout@v7
+    - if: env.HAS_CORPUS == 'true'
+      uses: ./.github/actions/fetch-corpus
+      with:
+        client-id: ${{ vars.CORPUS_APP_CLIENT_ID }}
+        private-key: ${{ secrets.CORPUS_APP_KEY }}
     - name: make
       run: make
     - name: make test
