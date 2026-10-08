@@ -1,0 +1,51 @@
+# From ecu-corpus tools/consumer-ci: once a week, moves the corpus submodule
+# to the corpus head and opens a pull request if it moved.
+# Needs "Allow GitHub Actions to create and approve pull requests" in the repo's
+# Actions settings. Pull requests opened with GITHUB_TOKEN don't start other
+# workflows, so run the tests on the bump branch by hand (or close and reopen).
+name: corpus bump
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: corpus-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.CORPUS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CORPUS_APP_KEY }}
+          owner: nyetlabs
+          repositories: ecu-corpus
+      - name: Move the corpus to its head
+        env:
+          TOKEN: ${{ steps.corpus-token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com/nyetlabs/ecu-corpus".insteadOf https://github.com/nyetlabs/ecu-corpus
+          git submodule update --init --checkout --remote corpus
+          if git diff --quiet; then
+            echo "corpus is current"
+            exit 0
+          fi
+          rev=$(git -C corpus rev-parse --short HEAD)
+          branch=corpus-bump-$rev
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "$branch already exists"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "chore: bump corpus to $rev"
+          git push origin "$branch"
+          gh pr create --head "$branch" --title "Bump corpus to $rev" --body "Automated weekly corpus bump."

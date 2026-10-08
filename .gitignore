@@ -1,3 +1,4 @@
+/.cursor
 .*.swp
 *.d
 *.o
@@ -7,4 +8,6 @@
 me7sum
 me7sum.exe
 .compiler_flags
-*.bin.txt
+.clangd
+/bins/
+/testdata/reports/

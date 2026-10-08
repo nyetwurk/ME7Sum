@@ -116,6 +116,19 @@ make test   # optional
 
 ---
 
+## Tests and corpus
+
+`make test` runs `me7sum` over the test images and fails on any `ABORT`, `WARNING` or `ERROR`. Reports go to the gitignored `testdata/reports/`. The images are:
+
+- every image in the private [ecu-corpus](https://github.com/nyetlabs/ecu-corpus) submodule (`corpus/`) whose `corpus.tsv` row has `checksums` = `ok`
+- the modified (non-OEM) images in `testdata/modified/`; `testdata/broken/` holds images ME7Sum can't handle and is not tested
+
+With read access to `ecu-corpus`, fetch the submodule at its pinned commit with `make corpus`; `make corpus-bump` moves it to the corpus head (commit the change yourself). The submodule URL is HTTPS; to use SSH, run `git config --global url.git@github.com:.insteadOf https://github.com/`. Without access, `corpus/` stays empty and `make test` skips the corpus images. `XDFKIT_CORPUS` points the tests at another corpus checkout, and `XDFKIT_REQUIRE_CORPUS=1` (set in CI) makes a missing corpus a failure. See xdfkit's `docs/corpus.md` for the corpus specification.
+
+`make bins` is temporary and will be removed: it fills a gitignored `bins/` with symlinks under the names the old committed `bins/` directory used (`scripts/bins-compat.tsv` maps them to corpus images), for workflows that still read `bins/`. New work should use `corpus/images/` instead.
+
+---
+
 ## Platform-Specific Notes
 
 | Platform | GMP/MPIR source       | Executable suffix     |
